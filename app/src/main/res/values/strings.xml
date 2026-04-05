@@ -1,0 +1,35 @@
+<resources>
+    <string name="app_name" translatable="false">My Application</string>
+
+    <string name="txt_english" translatable="false">English</string>
+    <string name="txt_arabic" translatable="false">Arabic</string>
+    <string name="txt_hindi" translatable="false">Hindi</string>
+    <string name="txt_spanish" translatable="false">Spanish</string>
+    <string name="txt_chinese" translatable="false">Chinese</string>
+    <string name="txt_portuguese" translatable="false">Portuguese</string>
+    <string name="txt_germany" translatable="false">Germany</string>
+    <string name="txt_russian" translatable="false">Russian</string>
+    <string name="txt_indonesian" translatable="false">Indonesian</string>
+    <string name="txt_french" translatable="false">French</string>
+
+
+    <string name="txt_select">Select</string>
+    <string name="txt_cancel">Cancel</string>
+    <string name="txt_yes">Yes</string>
+    <string name="txt_choose_one">Choose one</string>
+    <string name="txt_next">Next</string>
+    <string name="txt_get_start">Get Start</string>
+    <string name="txt_are_you_sure">Are you sure?</string>
+    <string name="txt_exit_app">You want to exit the application?</string>
+    <string name="txt_try_again">Try Again</string>
+    <string name="txt_loading">Loading…</string>
+    <string name="txt_this_action_contain_ads">This action contain ads</string>
+    <string name="txt_title_onb1">Welcome to Home AI</string>
+    <string name="txt_desc_onb1">Instantly redesign your home with AI</string>
+    <string name="txt_title_onb2">Redesign Your Dream\nSpace Instantly</string>
+    <string name="txt_title_onb3">Endless trendy design inspiration options</string>
+    <string name="txt_desc_onb2">Capture or upload an image. Let AI turn your room into a designer masterpiece</string>
+    <string name="txt_desc_onb3">Discover many design ideas crafted to match your taste, budget, and space</string>
+    <string name="txt_confirm">Confirm</string>
+
+</resources>
