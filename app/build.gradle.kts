@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -17,6 +19,7 @@ android {
     defaultConfig {
         applicationId = "com.example.myapplication"
         minSdk = 24
+        //noinspection OldTargetApi
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -32,18 +35,63 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            manifestPlaceholders["ad_app_id"] = "ca-app-pub-3940256099942544~3347511713"
+            buildConfigField("String", "inter_splash", "\"ca-app-pub-3940256099942544/1033173712\"")
+            buildConfigField("String", "inter_splash_2f", "\"ca-app-pub-3940256099942544/1033173712\"")
+            buildConfigField("String", "inter_home", "\"ca-app-pub-3940256099942544/1033173712\"")
+            buildConfigField("String", "inter_home_2f", "\"ca-app-pub-3940256099942544/1033173712\"")
+            buildConfigField("String", "inter_back", "\"ca-app-pub-3940256099942544/1033173712\"")
+            buildConfigField("String", "native_fs_splash", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_fs_splash_2f", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_fs_splash_2", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_fs_splash_2_2f", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_fs_1", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_ob_1", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_ob_2", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_ob_3", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_fs_1_2f", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_fs_2", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_fs_2_2f", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_language_1_1", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_language_1_2", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_feature", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "inter_feature", "\"ca-app-pub-3940256099942544/1033173712\"")
+            buildConfigField("String", "appopen_resume", "\"ca-app-pub-3940256099942544/9257395921\"")
+            buildConfigField("String", "banner_splash", "\"ca-app-pub-3940256099942544/2014213617\"")
+            buildConfigField("String", "banner_home", "\"ca-app-pub-3940256099942544/2014213617\"")
+            buildConfigField("String", "native_language_2_1", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_language_2_2", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "reward_feature", "\"ca-app-pub-3940256099942544/5224354917\"")
+            buildConfigField("String", "reward_feature_2f", "\"ca-app-pub-3940256099942544/5224354917\"")
+            buildConfigField("String", "native_full_screen_1", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_full_screen_1_2f", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_full_screen_2", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_full_screen_2_2f", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_home", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_home_2f", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_gen", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "native_gen_2f", "\"ca-app-pub-3940256099942544/2247696110\"")
+        }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+    //noinspection WrongGradleMethod
     kotlin {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -56,6 +104,7 @@ dependencies {
 
     // Dagger Hilt
     implementation(libs.hilt.android)
+    implementation(libs.androidx.lifecycle.process)
     ksp(libs.hilt.compiler)
 
     // Room
@@ -65,9 +114,10 @@ dependencies {
     ksp(libs.room.compiler)
 
     // Lifecycle
-    implementation(libs.androidx.lifecycle.livedata.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.kotlinx.coroutines.android)
 
     // RxJava
     implementation(libs.rxjava)
@@ -86,7 +136,6 @@ dependencies {
     // Navigation
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -96,4 +145,21 @@ dependencies {
 
     //Dot
     implementation(libs.dotsindicator)
+
+    //Firebase
+    implementation("com.google.firebase:firebase-config-ktx:22.1.2")
+    implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    implementation("com.google.firebase:firebase-appcheck-debug")
+
+    //AdMob
+    implementation("com.google.android.gms:play-services-ads:25.2.0")
+
+    //UMP
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
+
+    // Koin for dependency injection
+    implementation("io.insert-koin:koin-android:4.2.1")
 }

@@ -19,12 +19,31 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.viewbinding.ViewBinding
+import com.example.ads.appOpen.screen.callbacks.AppOpenOnLoadCallBack
+import com.example.ads.appOpen.screen.callbacks.AppOpenOnShowCallBack
+import com.example.ads.appOpen.screen.enums.AppOpenAdKey
+import com.example.ads.banner.presentation.enums.BannerAdKey
+import com.example.ads.banner.presentation.viewModels.ViewModelBanner
+import com.example.ads.interstitial.callbacks.InterstitialOnLoadCallBack
+import com.example.ads.interstitial.callbacks.InterstitialOnShowCallBack
+import com.example.ads.interstitial.enums.InterAdKey
+import com.example.ads.natives.presentation.enums.NativeAdKey
+import com.example.ads.natives.presentation.viewModels.ViewModelNative
+import com.example.ads.rewarded.callbacks.RewardedOnLoadCallBack
+import com.example.ads.rewarded.callbacks.RewardedOnShowCallBack
+import com.example.ads.rewarded.enums.RewardedAdKey
+import com.example.ads.rewarded.enums.RewardedInterAdKey
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.nativead.NativeAd
 import com.example.myapplication.R
+import com.example.myapplication.di.DIComponent
 import com.example.myapplication.ui.main.MainActivity
 import com.example.myapplication.ui.dialog.DialogLoading
 import com.example.myapplication.utils.SpManager
 import com.example.myapplication.utils.SystemUtil
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import javax.inject.Inject
+import kotlin.getValue
 
 abstract class BaseActivity<VB : ViewBinding>(
     private val bindingInflater: (LayoutInflater) -> VB
@@ -52,6 +71,7 @@ abstract class BaseActivity<VB : ViewBinding>(
         setBaseStatusBar(isVisible = true, isLightIcons = true)
         setBaseHideNavigation()
 
+        setupNativeAdObservers()
         initView()
         initData()
         initObserver()
@@ -62,6 +82,7 @@ abstract class BaseActivity<VB : ViewBinding>(
             }
         })
     }
+    protected val diComponent by lazy { DIComponent() }
     /**
      * Mặc định: Hiển thị tràn viền, trong suốt thanh trạng thái và điều hướng.
      * Content sẽ nằm bên dưới thanh hệ thống (không bị che).
@@ -254,6 +275,108 @@ abstract class BaseActivity<VB : ViewBinding>(
 
     fun showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
         Toast.makeText(this, message, duration).show()
+    }
+
+    /* ---------------------------------------- Ads ---------------------------------------- */
+
+    private val vmBanner: ViewModelBanner by viewModel()
+    private val vmNative: ViewModelNative by viewModel()
+
+    private val nativeAdCallbacks = mutableMapOf<NativeAdKey, Pair<(NativeAd) -> Unit, () -> Unit>>()
+
+    private fun setupNativeAdObservers() {
+        vmNative.adViewLiveData.observe(this) { (key, nativeAd) ->
+            nativeAdCallbacks.remove(key)?.first?.invoke(nativeAd)
+        }
+        vmNative.loadFailedLiveData.observe(this) { key ->
+            nativeAdCallbacks.remove(key)?.second?.invoke()
+        }
+    }
+
+    // --- Interstitial ---
+
+    protected fun loadInterAd(adType: InterAdKey, onResponse: (Boolean) -> Unit = {}) {
+        diComponent.interstitialAdsConfig.loadInterstitialAd(adType, object : InterstitialOnLoadCallBack {
+            override fun onResponse(successfullyLoaded: Boolean) = onResponse(successfullyLoaded)
+        })
+    }
+
+    protected fun showInterAd(adType: InterAdKey, onDismiss: () -> Unit = {}, onFailed: () -> Unit = {}) {
+        diComponent.interstitialAdsConfig.showInterstitialAd(this, adType, object : InterstitialOnShowCallBack {
+            override fun onAdDismissedFullScreenContent() = onDismiss()
+            override fun onAdFailedToShow() = onFailed()
+        })
+    }
+
+    // --- App Open ---
+
+    protected fun loadAppOpenAd(adType: AppOpenAdKey, onResponse: (Boolean) -> Unit = {}) {
+        diComponent.appOpenAdsConfig.loadAppOpenAd(adType, object : AppOpenOnLoadCallBack {
+            override fun onResponse(successfullyLoaded: Boolean, errorMessage: String?) = onResponse(successfullyLoaded)
+        })
+    }
+
+    protected fun showAppOpenAd(adType: AppOpenAdKey, onDismiss: () -> Unit = {}, onFailed: () -> Unit = {}) {
+        diComponent.appOpenAdsConfig.showAppOpenAd(this, adType, object : AppOpenOnShowCallBack {
+            override fun onAdDismissedFullScreenContent() = onDismiss()
+            override fun onAdFailedToShow() = onFailed()
+        })
+    }
+
+    // --- Rewarded ---
+
+    protected fun loadRewardedAd(adType: RewardedAdKey, onResponse: (Boolean) -> Unit = {}) {
+        diComponent.rewardedAdsConfig.loadRewardedAd(adType, object : RewardedOnLoadCallBack {
+            override fun onResponse(isSuccess: Boolean) = onResponse(isSuccess)
+        })
+    }
+
+    protected fun showRewardedAd(adType: RewardedAdKey, onRewarded: () -> Unit = {}, onDismiss: () -> Unit = {}, onFailed: () -> Unit = {}) {
+        diComponent.rewardedAdsConfig.showRewardedAd(this, adType, object : RewardedOnShowCallBack {
+            override fun onUserEarnedReward() = onRewarded()
+            override fun onAdDismissedFullScreenContent() = onDismiss()
+            override fun onAdFailedToShow() = onFailed()
+        })
+    }
+
+    // --- Rewarded Interstitial ---
+
+    protected fun loadRewardedInterAd(adType: RewardedInterAdKey, onResponse: (Boolean) -> Unit = {}) {
+        diComponent.rewardedInterAdsConfig.loadRewardedInterAd(adType, object : RewardedOnLoadCallBack {
+            override fun onResponse(isSuccess: Boolean) = onResponse(isSuccess)
+        })
+    }
+
+    protected fun showRewardedInterAd(adType: RewardedInterAdKey, onRewarded: () -> Unit = {}, onDismiss: () -> Unit = {}, onFailed: () -> Unit = {}) {
+        diComponent.rewardedInterAdsConfig.showRewardedInterAd(this, adType, object : RewardedOnShowCallBack {
+            override fun onUserEarnedReward() = onRewarded()
+            override fun onAdDismissedFullScreenContent() = onDismiss()
+            override fun onAdFailedToShow() = onFailed()
+        })
+    }
+
+    // --- Banner ---
+
+    protected fun loadBannerAd(adView: AdView, key: BannerAdKey, onLoaded: (AdView) -> Unit, onFailed: () -> Unit = {}) {
+        vmBanner.adViewLiveData.removeObservers(this)
+        vmBanner.loadFailedLiveData.removeObservers(this)
+        vmBanner.adViewLiveData.observe(this) { onLoaded(it) }
+        vmBanner.loadFailedLiveData.observe(this) { onFailed() }
+        vmBanner.loadBannerAd(adView, key)
+    }
+
+    protected fun destroyBannerAd(key: BannerAdKey) = vmBanner.destroyBanner(key)
+
+    // --- Native ---
+
+    protected fun loadNativeAd(key: NativeAdKey, onLoaded: (NativeAd) -> Unit, onFailed: () -> Unit = {}) {
+        nativeAdCallbacks[key] = Pair(onLoaded, onFailed)
+        vmNative.loadNativeAd(key)
+    }
+
+    protected fun destroyNativeAd(key: NativeAdKey) {
+        nativeAdCallbacks.remove(key)
+        vmNative.destroyNative(key)
     }
 
     override fun onDestroy() {
