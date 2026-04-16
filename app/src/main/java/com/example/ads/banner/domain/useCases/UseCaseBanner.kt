@@ -43,9 +43,15 @@ class UseCaseBanner(
         }
     }
 
+    private fun getFallbackAdId(bannerAdKey: BannerAdKey): String? {
+        return when (bannerAdKey) {
+            BannerAdKey.HOME -> BuildConfig.banner_home_2f
+        }
+    }
+
     private fun getAdType(bannerAdKey: BannerAdKey): BannerAdType {
         return when (bannerAdKey) {
-            BannerAdKey.HOME -> BannerAdType.COLLAPSIBLE_BOTTOM
+            BannerAdKey.HOME -> BannerAdType.ADAPTIVE
         }
     }
 
@@ -53,14 +59,37 @@ class UseCaseBanner(
         val bannerAdType = getAdType(bannerAdKey)
         validateAndLoadAd(bannerAdKey, callback) { adId ->
             isAdLoading = true
+            var primarySucceeded = false
             repositoryBannerImpl.fetchBannerAd(
                 adKey = bannerAdKey.value,
                 adId = adId,
                 bannerAdType = bannerAdType,
                 adView = adView
-            ) {
-                isAdLoading = false
-                callback.invoke(it)
+            ) { result ->
+                if (result != null) {
+                    primarySucceeded = true
+                    isAdLoading = false
+                    callback.invoke(result)
+                } else {
+                    if (!primarySucceeded) {
+                        val fallbackId = getFallbackAdId(bannerAdKey)
+                        if (!fallbackId.isNullOrEmpty()) {
+                            Log.d(TAG_ADS, "${bannerAdKey.value} -> loadBanner: primary failed, trying fallback")
+                            repositoryBannerImpl.fetchBannerAd(
+                                adKey = "${bannerAdKey.value}(fallback)",
+                                adId = fallbackId,
+                                bannerAdType = bannerAdType,
+                                adView = adView
+                            ) {
+                                isAdLoading = false
+                                callback.invoke(it)
+                            }
+                        } else {
+                            isAdLoading = false
+                            callback.invoke(null)
+                        }
+                    }
+                }
             }
         }
     }

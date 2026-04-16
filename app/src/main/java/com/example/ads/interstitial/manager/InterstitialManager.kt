@@ -186,6 +186,58 @@ abstract class InterstitialManager {
         mInterstitialAd?.show(activity)
     }
 
+    protected fun loadInterstitialWithFallback(
+        context: Context?,
+        adType: String,
+        primaryId: String,
+        fallbackId: String,
+        adEnable: Boolean,
+        isAppPurchased: Boolean,
+        isInternetConnected: Boolean,
+        listener: InterstitialOnLoadCallBack?,
+    ) {
+        if (isInterstitialLoaded()) {
+            Log.i(TAG_ADS, "$adType -> loadInterstitialWithFallback: Already loaded")
+            listener?.onResponse(true)
+            return
+        }
+
+        val fallbackListener = object : InterstitialOnLoadCallBack {
+            override fun onResponse(isLoaded: Boolean) {
+                listener?.onResponse(isLoaded)
+            }
+        }
+
+        val primaryListener = object : InterstitialOnLoadCallBack {
+            override fun onResponse(isLoaded: Boolean) {
+                if (isLoaded) {
+                    listener?.onResponse(true)
+                } else {
+                    Log.d(TAG_ADS, "$adType -> loadInterstitialWithFallback: primary failed, trying fallback")
+                    loadInterstitial(
+                        context = context,
+                        adType = "$adType(fallback)",
+                        interId = fallbackId,
+                        adEnable = adEnable,
+                        isAppPurchased = isAppPurchased,
+                        isInternetConnected = isInternetConnected,
+                        listener = fallbackListener
+                    )
+                }
+            }
+        }
+
+        loadInterstitial(
+            context = context,
+            adType = "$adType(primary)",
+            interId = primaryId,
+            adEnable = adEnable,
+            isAppPurchased = isAppPurchased,
+            isInternetConnected = isInternetConnected,
+            listener = primaryListener
+        )
+    }
+
     fun isInterstitialLoaded(): Boolean {
         return mInterstitialAd != null
     }

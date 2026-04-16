@@ -171,6 +171,56 @@ abstract class RewardedManager {
         }
     }
 
+    protected fun loadRewardedWithFallback(
+        context: Context?,
+        adType: String,
+        primaryId: String,
+        fallbackId: String,
+        adEnable: Boolean,
+        isAppPurchased: Boolean,
+        isInternetConnected: Boolean,
+        listener: RewardedOnLoadCallBack?,
+    ) {
+        if (isRewardedLoaded()) {
+            Log.i(TAG_ADS, "$adType -> loadRewardedWithFallback: Already loaded")
+            listener?.onResponse(true)
+            return
+        }
+
+        val primaryListener = object : RewardedOnLoadCallBack {
+            override fun onResponse(isLoaded: Boolean) {
+                if (isLoaded) {
+                    listener?.onResponse(true)
+                } else {
+                    Log.d(TAG_ADS, "$adType -> loadRewardedWithFallback: primary failed, trying fallback")
+                    loadRewarded(
+                        context = context,
+                        adType = "$adType(fallback)",
+                        rewardedId = fallbackId,
+                        adEnable = adEnable,
+                        isAppPurchased = isAppPurchased,
+                        isInternetConnected = isInternetConnected,
+                        listener = object : RewardedOnLoadCallBack {
+                            override fun onResponse(isLoaded: Boolean) {
+                                listener?.onResponse(isLoaded)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+
+        loadRewarded(
+            context = context,
+            adType = "$adType(primary)",
+            rewardedId = primaryId,
+            adEnable = adEnable,
+            isAppPurchased = isAppPurchased,
+            isInternetConnected = isInternetConnected,
+            listener = primaryListener
+        )
+    }
+
     fun isRewardedLoaded(): Boolean {
         return mRewardedAd != null
     }

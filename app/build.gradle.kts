@@ -65,6 +65,7 @@ android {
             buildConfigField("String", "appopen_resume", "\"ca-app-pub-3940256099942544/9257395921\"")
             buildConfigField("String", "banner_splash", "\"ca-app-pub-3940256099942544/2014213617\"")
             buildConfigField("String", "banner_home", "\"ca-app-pub-3940256099942544/2014213617\"")
+            buildConfigField("String", "banner_home_2f", "\"ca-app-pub-3940256099942544/2014213617\"")
             buildConfigField("String", "native_language_2_1", "\"ca-app-pub-3940256099942544/2247696110\"")
             buildConfigField("String", "native_language_2_2", "\"ca-app-pub-3940256099942544/2247696110\"")
             buildConfigField("String", "reward_feature", "\"ca-app-pub-3940256099942544/5224354917\"")

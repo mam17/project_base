@@ -171,6 +171,56 @@ abstract class RewardedInterManager {
         }
     }
 
+    protected fun loadRewardedInterWithFallback(
+        context: Context?,
+        adType: String,
+        primaryId: String,
+        fallbackId: String,
+        adEnable: Boolean,
+        isAppPurchased: Boolean,
+        isInternetConnected: Boolean,
+        listener: RewardedOnLoadCallBack?,
+    ) {
+        if (isRewardedInterLoaded()) {
+            Log.i(TAG_ADS, "$adType -> loadRewardedInterWithFallback: Already loaded")
+            listener?.onResponse(true)
+            return
+        }
+
+        val primaryListener = object : RewardedOnLoadCallBack {
+            override fun onResponse(isLoaded: Boolean) {
+                if (isLoaded) {
+                    listener?.onResponse(true)
+                } else {
+                    Log.d(TAG_ADS, "$adType -> loadRewardedInterWithFallback: primary failed, trying fallback")
+                    loadRewardedInter(
+                        context = context,
+                        adType = "$adType(fallback)",
+                        rewardedInterId = fallbackId,
+                        adEnable = adEnable,
+                        isAppPurchased = isAppPurchased,
+                        isInternetConnected = isInternetConnected,
+                        listener = object : RewardedOnLoadCallBack {
+                            override fun onResponse(isLoaded: Boolean) {
+                                listener?.onResponse(isLoaded)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+
+        loadRewardedInter(
+            context = context,
+            adType = "$adType(primary)",
+            rewardedInterId = primaryId,
+            adEnable = adEnable,
+            isAppPurchased = isAppPurchased,
+            isInternetConnected = isInternetConnected,
+            listener = primaryListener
+        )
+    }
+
     fun isRewardedInterLoaded(): Boolean {
         return mRewardedInterstitialAd != null
     }

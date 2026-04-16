@@ -45,12 +45,44 @@ class UseCaseNative(
         }
     }
 
+    private fun getFallbackAdId(nativeAdKey: NativeAdKey): String? {
+        return when (nativeAdKey) {
+            NativeAdKey.LANGUAGE_1 -> BuildConfig.native_language_1_2
+            NativeAdKey.LANGUAGE_2 -> BuildConfig.native_language_2_2
+            NativeAdKey.ON_BOARDING_FS_1 -> BuildConfig.native_fs_1_2f
+            NativeAdKey.ON_BOARDING_FS_2 -> BuildConfig.native_fs_2_2f
+            NativeAdKey.HOME -> BuildConfig.native_home_2f
+            else -> null
+        }
+    }
+
     fun loadNativeAd(nativeAdKey: NativeAdKey, callback: (ItemNativeAd?) -> Unit) {
         validateAndLoadAd(nativeAdKey, callback) { adId ->
             loadingKeys.add(nativeAdKey.value)
-            repositoryNativeImpl.fetchNativeAd(adKey = nativeAdKey.value, adId = adId) {
-                loadingKeys.remove(nativeAdKey.value)
-                callback.invoke(it)
+            var primarySucceeded = false
+            repositoryNativeImpl.fetchNativeAd(adKey = nativeAdKey.value, adId = adId) { result ->
+                if (result != null) {
+                    primarySucceeded = true
+                    loadingKeys.remove(nativeAdKey.value)
+                    callback.invoke(result)
+                } else {
+                    if (!primarySucceeded) {
+                        val fallbackId = getFallbackAdId(nativeAdKey)
+                        if (!fallbackId.isNullOrEmpty()) {
+                            Log.d(TAG_ADS, "${nativeAdKey.value} -> loadNative: primary failed, trying fallback")
+                            repositoryNativeImpl.fetchNativeAd(
+                                adKey = "${nativeAdKey.value}(fallback)",
+                                adId = fallbackId
+                            ) {
+                                loadingKeys.remove(nativeAdKey.value)
+                                callback.invoke(it)
+                            }
+                        } else {
+                            loadingKeys.remove(nativeAdKey.value)
+                            callback.invoke(null)
+                        }
+                    }
+                }
             }
         }
     }

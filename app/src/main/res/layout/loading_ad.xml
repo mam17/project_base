@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:backgroundTint="@color/white"
+    android:layout_height="match_parent"
     android:layout_gravity="center"
     android:gravity="center"
     android:orientation="horizontal">
 
     <ProgressBar
         android:layout_width="30dp"
+        android:indeterminateTint="@color/cta"
         android:layout_height="30dp"
         android:layout_gravity="center" />
 
@@ -18,7 +20,7 @@
         android:layout_gravity="center"
         android:paddingHorizontal="20dp"
         android:text="Loading Advertisement"
-        android:textSize="12dp"
+        android:textSize="12sp"
         tools:ignore="HardcodedText" />
 
 </LinearLayout>

@@ -175,6 +175,56 @@ abstract class AppOpenManager {
         mAppOpenAd?.show(activity)
     }
 
+    protected fun loadAppOpenWithFallback(
+        context: Context?,
+        adType: String,
+        primaryId: String,
+        fallbackId: String,
+        adEnable: Boolean,
+        isAppPurchased: Boolean,
+        isInternetConnected: Boolean,
+        listener: AppOpenOnLoadCallBack?,
+    ) {
+        if (isAppOpenLoaded()) {
+            Log.i(TAG_ADS, "$adType -> loadAppOpenWithFallback: Already loaded")
+            listener?.onResponse(true)
+            return
+        }
+
+        val primaryListener = object : AppOpenOnLoadCallBack {
+            override fun onResponse(isLoaded: Boolean, errorMessage: String?) {
+                if (isLoaded) {
+                    listener?.onResponse(true)
+                } else {
+                    Log.d(TAG_ADS, "$adType -> loadAppOpenWithFallback: primary failed, trying fallback")
+                    loadAppOpen(
+                        context = context,
+                        adType = "$adType(fallback)",
+                        appOpenId = fallbackId,
+                        adEnable = adEnable,
+                        isAppPurchased = isAppPurchased,
+                        isInternetConnected = isInternetConnected,
+                        listener = object : AppOpenOnLoadCallBack {
+                            override fun onResponse(isLoaded: Boolean, errorMessage: String?) {
+                                listener?.onResponse(isLoaded, errorMessage)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+
+        loadAppOpen(
+            context = context,
+            adType = "$adType(primary)",
+            appOpenId = primaryId,
+            adEnable = adEnable,
+            isAppPurchased = isAppPurchased,
+            isInternetConnected = isInternetConnected,
+            listener = primaryListener
+        )
+    }
+
     fun isAppOpenLoaded(): Boolean {
         return mAppOpenAd != null
     }

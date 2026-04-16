@@ -31,25 +31,23 @@ class RewardedAdsConfig(
 ) : RewardedManager() {
 
     fun loadRewardedAd(adType: RewardedAdKey, listener: RewardedOnLoadCallBack? = null) {
-        var rewardedAdId = ""
-        var isRemoteEnable = false
+        val isAppPurchased = sharedPreferenceUtils.isAppPurchased
+        val isInternetConnected = internetManager.isInternetConnected
 
         when (adType) {
             RewardedAdKey.AI_FEATURE -> {
-                rewardedAdId = BuildConfig.reward_feature
-                isRemoteEnable = sharedPreferenceUtils.rcRewardedAiFeature != 0
+                loadRewardedWithFallback(
+                    context = context,
+                    adType = adType.value,
+                    primaryId = BuildConfig.reward_feature_2f,
+                    fallbackId = BuildConfig.reward_feature,
+                    adEnable = sharedPreferenceUtils.rcRewardedAiFeature != 0,
+                    isAppPurchased = isAppPurchased,
+                    isInternetConnected = isInternetConnected,
+                    listener = listener
+                )
             }
         }
-
-        loadRewarded(
-            context = context,
-            adType = adType.value,
-            rewardedId = rewardedAdId,
-            adEnable = isRemoteEnable,
-            isAppPurchased = sharedPreferenceUtils.isAppPurchased,
-            isInternetConnected = internetManager.isInternetConnected,
-            listener = listener
-        )
     }
 
     fun showRewardedAd(

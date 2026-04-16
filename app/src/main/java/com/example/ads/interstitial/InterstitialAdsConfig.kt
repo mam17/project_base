@@ -34,30 +34,35 @@ class InterstitialAdsConfig(
     private val counterMap by lazy { HashMap<String, Int>() }
 
     fun loadInterstitialAd(adType: InterAdKey, listener: InterstitialOnLoadCallBack? = null) {
-        var interAdId = ""
-        var isRemoteEnable = false
+        val isAppPurchased = sharedPreferenceUtils.isAppPurchased
+        val isInternetConnected = internetManager.isInternetConnected
 
         when (adType) {
             InterAdKey.INTER_HOME -> {
-                interAdId = BuildConfig.inter_home_2f
-                isRemoteEnable = sharedPreferenceUtils.rcInterHome != 0
+                loadInterstitialWithFallback(
+                    context = context,
+                    adType = adType.value,
+                    primaryId = BuildConfig.inter_home_2f,
+                    fallbackId = BuildConfig.inter_home,
+                    adEnable = sharedPreferenceUtils.rcInterHome != 0,
+                    isAppPurchased = isAppPurchased,
+                    isInternetConnected = isInternetConnected,
+                    listener = listener
+                )
             }
 
             InterAdKey.FEATURE -> {
-                interAdId = BuildConfig.inter_home
-                isRemoteEnable = sharedPreferenceUtils.rcInterFeature != 0
+                loadInterstitial(
+                    context = context,
+                    adType = adType.value,
+                    interId = BuildConfig.inter_home,
+                    adEnable = sharedPreferenceUtils.rcInterFeature != 0,
+                    isAppPurchased = isAppPurchased,
+                    isInternetConnected = isInternetConnected,
+                    listener = listener
+                )
             }
         }
-
-        loadInterstitial(
-            context = context,
-            adType = adType.value,
-            interId = interAdId,
-            adEnable = isRemoteEnable,
-            isAppPurchased = sharedPreferenceUtils.isAppPurchased,
-            isInternetConnected = internetManager.isInternetConnected,
-            listener = listener
-        )
     }
 
     fun showInterstitialAd(
