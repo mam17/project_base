@@ -161,6 +161,26 @@ dependencies {
     //UMP
     implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 
-    // Koin for dependency injection
+    //Facebook SDK
+    implementation("com.facebook.android:facebook-android-sdk:18.1.3")
+
+    //Mediation admob
+    implementation("com.google.ads.mediation:facebook:6.20.0.0")
+    implementation("com.google.ads.mediation:applovin:13.3.1.0")
+    implementation("com.google.ads.mediation:vungle:7.5.0.0")
+    implementation("com.google.ads.mediation:pangle:7.2.0.6.0")
+    implementation("com.google.ads.mediation:mintegral:16.9.71.0")
+    implementation("com.google.ads.mediation:inmobi:10.6.1.0")
+    implementation("com.google.ads.mediation:ironsource:8.2.0.0")
+
+    //Adjust
+    implementation("com.adjust.sdk:adjust-android:5.4.6")
+
+    //Appsflyer
+    implementation("com.appsflyer:af-android-sdk:6.17.0")
+    implementation("com.android.installreferrer:installreferrer:2.2")
+    implementation("com.google.android.gms:play-services-appset:16.1.0")
+
+    //Koin for dependency injection
     implementation("io.insert-koin:koin-android:4.2.1")
 }

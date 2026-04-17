@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"
+        tools:ignore="AdvertisingIdPolicy" />
+
     <application
         android:name=".MyApplication"
         android:allowBackup="true"
@@ -32,15 +36,8 @@
             android:exported="false" />
         <activity
             android:name=".ui.main.MainActivity"
-            android:exported="true"></activity> <!-- <activity -->
-        <!-- android:name="com.google.android.gms.ads.AdActivity" -->
-        <!-- android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize" -->
-        <!-- android:theme="@style/Theme.AdmobAds.AdTheme" -->
-        <!-- tools:replace="android:theme" /> -->
-        <!-- <property -->
-        <!-- android:name="android.adservices.AD_SERVICES_CONFIG" -->
-        <!-- android:resource="@xml/gma_ad_services_config" -->
-        <!-- tools:replace="android:resource" /> -->
+            android:exported="true" />
+
         <meta-data
             android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
             android:value="true" />
@@ -50,6 +47,28 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${ad_app_id}" />
+        <meta-data
+            android:name="com.google.android.gms.ads.AD_MANAGER_DEBUG_LOGGING"
+            android:value="true"/>
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" />
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token" />
+        <meta-data
+            android:name="com.facebook.sdk.AutoInitEnabled"
+            android:value="true" />
+        <meta-data
+            android:name="com.facebook.sdk.AutoLogAppEventsEnabled"
+            android:value="true" />
+        <meta-data
+            android:name="com.facebook.sdk.AdvertiserIDCollectionEnabled"
+            android:value="true" />
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
     </application>
 
 </manifest>

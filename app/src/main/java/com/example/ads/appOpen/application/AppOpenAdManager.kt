@@ -17,18 +17,9 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.ads.utilities.Constants.TAG_ADS
-import com.example.myapplication.R
+import com.example.myapplication.BuildConfig
 import com.hypersoft.admobads.utilities.manager.InternetManager
 import java.util.Date
-
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/17/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 class AppOpenAdManager(
     private val application: Application,
@@ -44,6 +35,7 @@ class AppOpenAdManager(
     private var isInterGoingToShow = false
     private var isLoadingAd = false
     private var isShowingAd = false
+    private var hasPreloaded = false
     var isSplash = true
 
     /* --------------------------------------- Manage --------------------------------------- */
@@ -67,6 +59,10 @@ class AppOpenAdManager(
     override fun onActivityStarted(activity: Activity) {
         Log.d(TAG_ADS, "AppOpen -> onActivityStarted: called")
         currentActivity = activity
+        if (!hasPreloaded) {
+            hasPreloaded = true
+            loadAppOpen()
+        }
     }
 
     override fun onActivityPaused(activity: Activity) {}
@@ -78,7 +74,7 @@ class AppOpenAdManager(
 
     /* --------------------------------------- Load & Show --------------------------------------- */
 
-    private val appOpenId by lazy { "application.getString(R.string.admob_app_open_id)" }
+    private val appOpenId by lazy { BuildConfig.appopen_resume }
 
     fun loadAppOpen() {
         if (isAdAvailable()) {

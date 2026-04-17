@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name" translatable="false">My Application</string>
 
+    <string name="facebook_app_id" translatable="false">45190878582299742</string>
+    <string name="facebook_client_token" translatable="false">6611213794fd0ab81fbdd4ea478bb0512</string>
+
     <string name="txt_english" translatable="false">English</string>
     <string name="txt_arabic" translatable="false">Arabic</string>
     <string name="txt_hindi" translatable="false">Hindi</string>

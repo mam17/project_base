@@ -53,7 +53,7 @@ class SharedPreferenceUtils(private val sharedPreferences: SharedPreferences) {
     /* ----- AppOpen Ads ----- */
 
     var rcAppOpen: Int
-        get() = sharedPreferences.getInt(appOpen, 0)
+        get() = sharedPreferences.getInt(appOpen, 1)
         set(value) {
             sharedPreferences.edit().apply {
                 putInt(appOpen, value)
