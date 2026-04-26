@@ -192,8 +192,8 @@ abstract class AppOpenManager {
         }
 
         val primaryListener = object : AppOpenOnLoadCallBack {
-            override fun onResponse(isLoaded: Boolean, errorMessage: String?) {
-                if (isLoaded) {
+            override fun onResponse(successfullyLoaded: Boolean, errorMessage: String?) {
+                if (successfullyLoaded) {
                     listener?.onResponse(true)
                 } else {
                     Log.d(TAG_ADS, "$adType -> loadAppOpenWithFallback: primary failed, trying fallback")
@@ -205,8 +205,8 @@ abstract class AppOpenManager {
                         isAppPurchased = isAppPurchased,
                         isInternetConnected = isInternetConnected,
                         listener = object : AppOpenOnLoadCallBack {
-                            override fun onResponse(isLoaded: Boolean, errorMessage: String?) {
-                                listener?.onResponse(isLoaded, errorMessage)
+                            override fun onResponse(successfullyLoaded: Boolean, errorMessage: String?) {
+                                listener?.onResponse(successfullyLoaded, errorMessage)
                             }
                         }
                     )

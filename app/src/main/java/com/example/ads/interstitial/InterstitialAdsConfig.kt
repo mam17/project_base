@@ -12,6 +12,8 @@ import com.example.ads.utilities.Constants.TAG_ADS
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
 import com.example.ads.utilities.InternetManager
+import com.example.ads.utilities.LoadingDialogHelper
+import com.example.ads.ui.dialog.DialogLoadingAds
 
 /**
  * Created by: Sohaib Ahmed
@@ -37,6 +39,11 @@ class InterstitialAdsConfig(
         val isAppPurchased = sharedPreferenceUtils.isAppPurchased
         val isInternetConnected = internetManager.isInternetConnected
 
+        val loadingDialog = DialogLoadingAds(context ?: return)
+        loadingDialog.show()
+
+        val wrappedListener = LoadingDialogHelper.wrapInterstitialCallback(loadingDialog, listener)
+
         when (adType) {
             InterAdKey.INTER_HOME -> {
                 loadInterstitialWithFallback(
@@ -47,7 +54,7 @@ class InterstitialAdsConfig(
                     adEnable = sharedPreferenceUtils.rcInterHome != 0,
                     isAppPurchased = isAppPurchased,
                     isInternetConnected = isInternetConnected,
-                    listener = listener
+                    listener = wrappedListener
                 )
             }
 
@@ -59,7 +66,7 @@ class InterstitialAdsConfig(
                     adEnable = sharedPreferenceUtils.rcInterFeature != 0,
                     isAppPurchased = isAppPurchased,
                     isInternetConnected = isInternetConnected,
-                    listener = listener
+                    listener = wrappedListener
                 )
             }
         }
@@ -118,7 +125,4 @@ class InterstitialAdsConfig(
         }
     }
 
-    private fun getResString(@StringRes resId: Int): String {
-        return context?.resources?.getString(resId) ?: ""
-    }
 }

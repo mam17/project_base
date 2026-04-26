@@ -188,8 +188,8 @@ abstract class RewardedManager {
         }
 
         val primaryListener = object : RewardedOnLoadCallBack {
-            override fun onResponse(isLoaded: Boolean) {
-                if (isLoaded) {
+            override fun onResponse(isSuccess: Boolean) {
+                if (isSuccess) {
                     listener?.onResponse(true)
                 } else {
                     Log.d(TAG_ADS, "$adType -> loadRewardedWithFallback: primary failed, trying fallback")
@@ -201,8 +201,8 @@ abstract class RewardedManager {
                         isAppPurchased = isAppPurchased,
                         isInternetConnected = isInternetConnected,
                         listener = object : RewardedOnLoadCallBack {
-                            override fun onResponse(isLoaded: Boolean) {
-                                listener?.onResponse(isLoaded)
+                            override fun onResponse(isSuccess: Boolean) {
+                                listener?.onResponse(isSuccess)
                             }
                         }
                     )

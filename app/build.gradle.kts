@@ -25,6 +25,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["ad_app_id"] = "ca-app-pub-3940256099942544~3347511713"
     }
 
     buildTypes {
@@ -168,7 +169,7 @@ dependencies {
     implementation("com.google.ads.mediation:facebook:6.20.0.0")
     implementation("com.google.ads.mediation:applovin:13.3.1.0")
     implementation("com.google.ads.mediation:vungle:7.5.0.0")
-    implementation("com.google.ads.mediation:pangle:7.2.0.6.0")
+    implementation("com.google.ads.mediation:pangle:7.9.1.3.0")
     implementation("com.google.ads.mediation:mintegral:16.9.71.0")
     implementation("com.google.ads.mediation:inmobi:10.6.1.0")
     implementation("com.google.ads.mediation:ironsource:8.2.0.0")

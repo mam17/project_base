@@ -203,14 +203,14 @@ abstract class InterstitialManager {
         }
 
         val fallbackListener = object : InterstitialOnLoadCallBack {
-            override fun onResponse(isLoaded: Boolean) {
-                listener?.onResponse(isLoaded)
+            override fun onResponse(successfullyLoaded: Boolean) {
+                listener?.onResponse(successfullyLoaded)
             }
         }
 
         val primaryListener = object : InterstitialOnLoadCallBack {
-            override fun onResponse(isLoaded: Boolean) {
-                if (isLoaded) {
+            override fun onResponse(successfullyLoaded: Boolean) {
+                if (successfullyLoaded) {
                     listener?.onResponse(true)
                 } else {
                     Log.d(TAG_ADS, "$adType -> loadInterstitialWithFallback: primary failed, trying fallback")

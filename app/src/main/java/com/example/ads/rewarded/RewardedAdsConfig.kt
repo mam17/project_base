@@ -9,6 +9,8 @@ import com.example.ads.rewarded.managers.RewardedManager
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
 import com.example.ads.utilities.InternetManager
+import com.example.ads.utilities.LoadingDialogHelper
+import com.example.ads.ui.dialog.DialogLoadingAds
 
 /**
  * Created by: Sohaib Ahmed
@@ -33,6 +35,11 @@ class RewardedAdsConfig(
         val isAppPurchased = sharedPreferenceUtils.isAppPurchased
         val isInternetConnected = internetManager.isInternetConnected
 
+        val loadingDialog = DialogLoadingAds(context ?: return)
+        loadingDialog.show()
+
+        val wrappedListener = LoadingDialogHelper.wrapRewardedCallback(loadingDialog, listener)
+
         when (adType) {
             RewardedAdKey.AI_FEATURE -> {
                 loadRewardedWithFallback(
@@ -43,7 +50,7 @@ class RewardedAdsConfig(
                     adEnable = sharedPreferenceUtils.rcRewardedAiFeature != 0,
                     isAppPurchased = isAppPurchased,
                     isInternetConnected = isInternetConnected,
-                    listener = listener
+                    listener = wrappedListener
                 )
             }
         }

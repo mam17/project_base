@@ -9,6 +9,8 @@ import com.example.ads.rewarded.enums.RewardedInterAdKey
 import com.example.ads.rewarded.managers.RewardedInterManager
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.ads.utilities.InternetManager
+import com.example.ads.utilities.LoadingDialogHelper
+import com.example.ads.ui.dialog.DialogLoadingAds
 
 /**
  * Created by: Sohaib Ahmed
@@ -40,6 +42,11 @@ class RewardedInterAdsConfig(
             }
         }
 
+        val loadingDialog = DialogLoadingAds(context ?: return)
+        loadingDialog.show()
+
+        val wrappedListener = LoadingDialogHelper.wrapRewardedCallback(loadingDialog, listener)
+
         loadRewardedInter(
             context = context,
             adType = adType.value,
@@ -47,7 +54,7 @@ class RewardedInterAdsConfig(
             adEnable = isRemoteEnable,
             isAppPurchased = sharedPreferenceUtils.isAppPurchased,
             isInternetConnected = internetManager.isInternetConnected,
-            listener = listener
+            listener = wrappedListener
         )
     }
 
@@ -62,9 +69,5 @@ class RewardedInterAdsConfig(
             isAppPurchased = sharedPreferenceUtils.isAppPurchased,
             listener
         )
-    }
-
-    private fun getResString(@StringRes resId: Int): String {
-        return context?.resources?.getString(resId) ?: ""
     }
 }
