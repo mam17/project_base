@@ -8,7 +8,7 @@ import com.example.ads.rewarded.callbacks.RewardedOnShowCallBack
 import com.example.ads.rewarded.enums.RewardedInterAdKey
 import com.example.ads.rewarded.managers.RewardedInterManager
 import com.example.ads.utilities.SharedPreferenceUtils
-import com.hypersoft.admobads.utilities.manager.InternetManager
+import com.example.ads.utilities.InternetManager
 
 /**
  * Created by: Sohaib Ahmed

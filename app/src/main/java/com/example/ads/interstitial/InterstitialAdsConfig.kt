@@ -11,7 +11,7 @@ import com.example.ads.interstitial.manager.InterstitialManager
 import com.example.ads.utilities.Constants.TAG_ADS
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
-import com.hypersoft.admobads.utilities.manager.InternetManager
+import com.example.ads.utilities.InternetManager
 
 /**
  * Created by: Sohaib Ahmed

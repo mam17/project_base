@@ -1,4 +1,4 @@
-package com.hypersoft.admobads.utilities.manager
+package com.example.ads.utilities
 
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities

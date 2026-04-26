@@ -10,7 +10,8 @@ import com.example.ads.utilities.Constants.TAG_ADS
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
 import com.google.android.gms.ads.AdView
-import com.hypersoft.admobads.utilities.manager.InternetManager
+import com.example.ads.utilities.InternetManager
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Created by: Sohaib Ahmed
@@ -28,8 +29,12 @@ class UseCaseBanner(
     private val context: Context
 ) {
 
-    @Volatile
-    private var isAdLoading = false
+    /**
+     * Thread-safe flag to prevent duplicate ad load requests.
+     * Using AtomicBoolean instead of @Volatile to ensure atomic operations
+     * when checking and setting state from multiple callback threads.
+     */
+    private val isAdLoading = AtomicBoolean(false)
 
     private fun checkRemoteConfig(bannerAdKey: BannerAdKey): Boolean {
         return when (bannerAdKey) {
@@ -58,7 +63,7 @@ class UseCaseBanner(
     fun loadBannerAd(adView: AdView, bannerAdKey: BannerAdKey, callback: (ItemBannerAd?) -> Unit) {
         val bannerAdType = getAdType(bannerAdKey)
         validateAndLoadAd(bannerAdKey, callback) { adId ->
-            isAdLoading = true
+            isAdLoading.set(true)
             var primarySucceeded = false
             repositoryBannerImpl.fetchBannerAd(
                 adKey = bannerAdKey.value,
@@ -68,7 +73,7 @@ class UseCaseBanner(
             ) { result ->
                 if (result != null) {
                     primarySucceeded = true
-                    isAdLoading = false
+                    isAdLoading.set(false)
                     callback.invoke(result)
                 } else {
                     if (!primarySucceeded) {
@@ -81,11 +86,11 @@ class UseCaseBanner(
                                 bannerAdType = bannerAdType,
                                 adView = adView
                             ) {
-                                isAdLoading = false
+                                isAdLoading.set(false)
                                 callback.invoke(it)
                             }
                         } else {
-                            isAdLoading = false
+                            isAdLoading.set(false)
                             callback.invoke(null)
                         }
                     }

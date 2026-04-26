@@ -12,7 +12,7 @@ import com.google.firebase.remoteconfig.get
 import com.google.firebase.remoteconfig.remoteConfig
 import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.example.ads.utilities.firebase.FirebaseUtils.recordException
-import com.hypersoft.admobads.utilities.manager.InternetManager
+import com.example.ads.utilities.InternetManager
 import com.example.ads.utilities.SharedPreferenceUtils
 
 

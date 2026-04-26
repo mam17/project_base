@@ -106,6 +106,11 @@ class DataSourceRemoteBanner(private val context: Context) {
     }
 
 
+    /**
+     * Get adaptive banner ad size. Handles both deprecated and new APIs for compatibility
+     * with devices running API < 31 and >= 31 respectively. The deprecation suppression is
+     * necessary for API compatibility across different Android versions.
+     */
     @Suppress("DEPRECATION")
     private fun getAdSize(): AdSize? {
         val density = context.resources.displayMetrics.density

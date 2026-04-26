@@ -20,7 +20,7 @@ import com.example.ads.natives.domain.useCases.UseCaseNative
 import com.example.ads.natives.presentation.viewModels.ViewModelNative
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.ads.utilities.firebase.RemoteConfiguration
-import com.hypersoft.admobads.utilities.manager.InternetManager
+import com.example.ads.utilities.InternetManager
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module

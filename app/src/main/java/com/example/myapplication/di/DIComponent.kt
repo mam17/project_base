@@ -7,7 +7,7 @@ import com.example.ads.rewarded.RewardedAdsConfig
 import com.example.ads.rewarded.RewardedInterAdsConfig
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.ads.utilities.firebase.RemoteConfiguration
-import com.hypersoft.admobads.utilities.manager.InternetManager
+import com.example.ads.utilities.InternetManager
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 

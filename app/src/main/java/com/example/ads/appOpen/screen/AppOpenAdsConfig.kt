@@ -9,7 +9,7 @@ import com.example.ads.appOpen.screen.manager.AppOpenManager
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
 import com.example.myapplication.R
-import com.hypersoft.admobads.utilities.manager.InternetManager
+import com.example.ads.utilities.InternetManager
 
 /**
  * Created by: Sohaib Ahmed

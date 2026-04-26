@@ -2,14 +2,13 @@ package com.example.ads.rewarded
 
 import android.app.Activity
 import android.content.Context
-import androidx.annotation.StringRes
 import com.example.ads.rewarded.callbacks.RewardedOnLoadCallBack
 import com.example.ads.rewarded.callbacks.RewardedOnShowCallBack
 import com.example.ads.rewarded.enums.RewardedAdKey
 import com.example.ads.rewarded.managers.RewardedManager
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
-import com.hypersoft.admobads.utilities.manager.InternetManager
+import com.example.ads.utilities.InternetManager
 
 /**
  * Created by: Sohaib Ahmed
@@ -61,9 +60,5 @@ class RewardedAdsConfig(
             isAppPurchased = sharedPreferenceUtils.isAppPurchased,
             listener
         )
-    }
-
-    private fun getResString(@StringRes resId: Int): String {
-        return context?.resources?.getString(resId) ?: ""
     }
 }

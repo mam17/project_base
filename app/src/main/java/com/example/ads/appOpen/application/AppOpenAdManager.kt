@@ -17,8 +17,10 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.ads.utilities.Constants.TAG_ADS
+import com.example.ads.utilities.Constants.MILLISECONDS_PER_HOUR
+import com.example.ads.utilities.Constants.AD_EXPIRY_HOURS
 import com.example.myapplication.BuildConfig
-import com.hypersoft.admobads.utilities.manager.InternetManager
+import com.example.ads.utilities.InternetManager
 import java.util.Date
 
 class AppOpenAdManager(
@@ -209,8 +211,7 @@ class AppOpenAdManager(
 
     private fun wasAdExpired(): Boolean {
         val dateDifference: Long = Date().time - loadTime
-        val numMilliSecondsPerHour: Long = 3600000
-        val isExpired = dateDifference > numMilliSecondsPerHour * 4
+        val isExpired = dateDifference > MILLISECONDS_PER_HOUR * AD_EXPIRY_HOURS
         if (isExpired) {
             Log.e(
                 TAG_ADS,
@@ -222,47 +223,9 @@ class AppOpenAdManager(
         return isExpired
     }
 
-    /**
-     *  Uncomment following method for `Pangle Mediation`
-     */
-    private fun isPangleAdActivity(currentActivity: Activity?): Boolean {
-        return false
-        /*// If currentActivity is null, return false
-        if (currentActivity == null) return false
+    private fun isPangleAdActivity(currentActivity: Activity?): Boolean = false
 
-        val activityClasses = listOf(
-            TTFullScreenExpressVideoActivity::class.java,
-            TTFullScreenVideoActivity::class.java,
-            TTInterstitialActivity::class.java,
-            TTInterstitialExpressActivity::class.java,
-            TTRewardExpressVideoActivity::class.java,
-            TTVideoLandingPageActivity::class.java,
-            TTVideoLandingPageLink2Activity::class.java,
-            TTWebsiteActivity::class.java,
-            TTLandingPageActivity::class.java,
-            TTPlayableLandingPageActivity::class.java,
-            TTDelegateActivity::class.java,
-            TTBaseActivity::class.java,
-            TTBaseVideoActivity::class.java
-        )
-
-        return activityClasses.any { it.isInstance(currentActivity) }*/
-    }
-
-    /**
-     *  Uncomment following method for `Mintegral Mediation`
-     */
-    private fun isMintegralAdActivity(currentActivity: Activity?): Boolean {
-        return false
-        /*// If currentActivity is null, return false
-        if (currentActivity == null) return false
-        val activityClasses = listOf(
-            MintegralAppOpenAd::class.java,
-            MintegralInterstitialAd::class.java,
-            MintegralRewardedAd::class.java
-        )
-        return activityClasses.any { it.isInstance(currentActivity) }*/
-    }
+    private fun isMintegralAdActivity(currentActivity: Activity?): Boolean = false
 
     fun resetAppOpen() {
         currentActivity = null

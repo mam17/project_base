@@ -87,7 +87,7 @@ class ConsentController(private val activity: Activity) {
                 }
             }, { error ->
                 Log.e(TAG, "initializationError: ${error.message}")
-                consentCallback?.onAdsLoad(canRequestAds)
+                consentCallback?.onAdsLoad(false)
             })
         }
     }
@@ -105,20 +105,24 @@ class ConsentController(private val activity: Activity) {
 
     fun showConsentForm() {
         Log.i(TAG, "Consent form is showing")
+
+        if (consentForm == null) {
+            Log.e(TAG, "Consent form is null, cannot show")
+            consentCallback?.onAdsLoad(canRequestAds)
+            return
+        }
+
         consentForm?.show(activity) { formError ->
-            Log.i(TAG, "consent Form Dismissed")
-
+            Log.i(TAG, "Consent Form Dismissed")
             consentCallback?.onConsentFormDismissed()
-            consentCallback?.onAdsLoad(canRequestAds)
 
-            when (formError == null) {
-                true -> checkConsentAndPrivacyStatus()
-                false -> Log.e(TAG, "Consent Form Show to fail: ${formError.message}")
+            if (formError == null) {
+                consentCallback?.onAdsLoad(canRequestAds)
+                checkConsentAndPrivacyStatus()
+            } else {
+                Log.e(TAG, "Consent Form Show failed: ${formError.message}")
+                consentCallback?.onAdsLoad(canRequestAds)
             }
-
-        } ?: run {
-            Log.e(TAG, "Consent form failed to show")
-            consentCallback?.onAdsLoad(canRequestAds)
         }
     }
 
