@@ -36,11 +36,22 @@ class InterstitialAdsConfig(
     private val counterMap by lazy { HashMap<String, Int>() }
 
     fun loadInterstitialAd(adType: InterAdKey, listener: InterstitialOnLoadCallBack? = null) {
+        loadInterstitialAd(null, adType, listener)
+    }
+
+    fun loadInterstitialAd(
+        activity: Activity?,
+        adType: InterAdKey,
+        listener: InterstitialOnLoadCallBack? = null
+    ) {
         val isAppPurchased = sharedPreferenceUtils.isAppPurchased
         val isInternetConnected = internetManager.isInternetConnected
 
-        val loadingDialog = DialogLoadingAds(context ?: return)
-        loadingDialog.show()
+        val loadingDialog = if (activity != null) {
+            DialogLoadingAds(activity).apply { show() }
+        } else {
+            null
+        }
 
         val wrappedListener = LoadingDialogHelper.wrapInterstitialCallback(loadingDialog, listener)
 

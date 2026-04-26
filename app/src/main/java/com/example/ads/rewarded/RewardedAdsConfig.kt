@@ -32,11 +32,22 @@ class RewardedAdsConfig(
 ) : RewardedManager() {
 
     fun loadRewardedAd(adType: RewardedAdKey, listener: RewardedOnLoadCallBack? = null) {
+        loadRewardedAd(null, adType, listener)
+    }
+
+    fun loadRewardedAd(
+        activity: Activity?,
+        adType: RewardedAdKey,
+        listener: RewardedOnLoadCallBack? = null
+    ) {
         val isAppPurchased = sharedPreferenceUtils.isAppPurchased
         val isInternetConnected = internetManager.isInternetConnected
 
-        val loadingDialog = DialogLoadingAds(context ?: return)
-        loadingDialog.show()
+        val loadingDialog = if (activity != null) {
+            DialogLoadingAds(activity).apply { show() }
+        } else {
+            null
+        }
 
         val wrappedListener = LoadingDialogHelper.wrapRewardedCallback(loadingDialog, listener)
 

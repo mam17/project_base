@@ -23,13 +23,13 @@ class DialogLoadingAds(context: Context) : Dialog(context) {
         setCanceledOnTouchOutside(false)
     }
 
-    fun show() {
+    override fun show() {
         if (!isShowing) {
             super.show()
         }
     }
 
-    fun dismiss() {
+    override fun dismiss() {
         if (isShowing) {
             super.dismiss()
         }

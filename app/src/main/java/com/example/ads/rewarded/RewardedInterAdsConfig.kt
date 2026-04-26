@@ -32,6 +32,14 @@ class RewardedInterAdsConfig(
 ) : RewardedInterManager() {
 
     fun loadRewardedInterAd(adType: RewardedInterAdKey, listener: RewardedOnLoadCallBack? = null) {
+        loadRewardedInterAd(null, adType, listener)
+    }
+
+    fun loadRewardedInterAd(
+        activity: Activity?,
+        adType: RewardedInterAdKey,
+        listener: RewardedOnLoadCallBack? = null
+    ) {
         var rewardedInterAdId = ""
         var isRemoteEnable = false
 
@@ -42,8 +50,11 @@ class RewardedInterAdsConfig(
             }
         }
 
-        val loadingDialog = DialogLoadingAds(context ?: return)
-        loadingDialog.show()
+        val loadingDialog = if (activity != null) {
+            DialogLoadingAds(activity).apply { show() }
+        } else {
+            null
+        }
 
         val wrappedListener = LoadingDialogHelper.wrapRewardedCallback(loadingDialog, listener)
 
