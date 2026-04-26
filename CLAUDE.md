@@ -613,6 +613,91 @@ override fun initData() {
 }
 ```
 
+## ✅ Ad Loading Dialog & Refactored Ad Pattern (COMPLETED)
+
+### Tính Năng Hoàn Thành
+- ✅ Hiển thị loading dialog khi ads đang tải
+- ✅ Tự động dismiss dialog khi load thành công
+- ✅ Auto-show ads ngay sau khi load xong
+- ✅ Xóa preload pattern, chuyển sang on-demand load+show
+- ✅ Code review fixes: 16 findings (3 critical, 8 warnings, 5 info)
+
+### Files Implement
+1. **DialogLoadingAds.kt** (NEW) - Custom dialog hiển thị loading state
+   - Dùng DialogLoadingBinding
+   - setCancelable(false), setCanceledOnTouchOutside(false)
+   - Kiểm tra isShowing trước show/dismiss
+
+2. **LoadingDialogHelper.kt** (NEW) - Utility wrapper callbacks
+   - `wrapInterstitialCallback()` - Wrap InterstitialOnLoadCallBack
+   - `wrapRewardedCallback()` - Wrap RewardedOnLoadCallBack
+   - Tự động dismiss dialog khi load hoàn tất
+
+3. **Ad Config Classes (Refactored)**
+   - InterstitialAdsConfig.kt: Thêm overload `loadInterstitialAd(activity?, adType, listener)`
+   - RewardedAdsConfig.kt: Thêm overload `loadRewardedAd(activity?, adType, listener)`
+   - RewardedInterAdsConfig.kt: Thêm overload `loadRewardedInterAd(activity?, adType, listener)`
+   - Tất cả tự động show loading dialog nếu activity != null
+
+4. **MainActivity.kt (Refactored)**
+   - ❌ Xóa: `loadInterstitialHome()` preload call từ initView()
+   - ❌ Xóa: `loadRewardedAd()` preload call từ initData()
+   - ❌ Xóa: `loadInterstitialHome()` method
+   - ✅ Thêm: On-demand load+show pattern trong button handlers
+   - ✅ Thêm: Imports for InterstitialOnLoadCallBack, RewardedOnLoadCallBack
+
+### Loading Dialog Logic Flow
+
+```kotlin
+// Interstitial Ad (Button Click)
+binding.btnShowInter.setOnClickListener {
+    diComponent.interstitialAdsConfig.loadInterstitialAd(
+        activity = this,        // Activity context for dialog
+        adType = InterAdKey.INTER_HOME,
+        listener = object : InterstitialOnLoadCallBack {
+            override fun onResponse(successfullyLoaded: Boolean) {
+                if (successfullyLoaded) {
+                    // Auto-show ads khi load thành công
+                    showInterAd(InterAdKey.INTER_HOME, ...)
+                } else {
+                    // Fallback nếu load fail
+                    showNativeHomeOverlay(action)
+                }
+            }
+        }
+    )
+}
+
+// Rewarded Ad (Button Click)
+binding.btnShowReward.setOnClickListener {
+    diComponent.rewardedAdsConfig.loadRewardedAd(
+        activity = this,
+        adType = RewardedAdKey.AI_FEATURE,
+        listener = object : RewardedOnLoadCallBack {
+            override fun onResponse(isSuccess: Boolean) {
+                if (isSuccess) {
+                    // Auto-show ads khi load thành công
+                    showRewardedAd(RewardedAdKey.AI_FEATURE, ...)
+                }
+            }
+        }
+    )
+}
+```
+
+### Dialog Behavior
+1. **Load bắt đầu** → `DialogLoadingAds` hiển thị (tự động qua LoadingDialogHelper)
+2. **Load thành công** → Dialog dismiss, ads show ngay lập tức
+3. **Load thất bại** → Dialog dismiss, fallback action execute
+4. **Activity context required** → Nếu null, dialog không show (backward compatible)
+
+### Code Quality Fixes
+- ✅ CR-01: Fixed package path mismatch (InternetManager)
+- ✅ CR-02: Removed unused `getResString()` methods
+- ✅ CR-03: Replaced @Volatile with AtomicBoolean (thread-safe)
+- ✅ Fixed compile errors (Type mismatch, BadTokenException)
+- ✅ Consistent imports across all ad config files
+
 ## Danh Sách Kiểm Tra (Checklist) Khi Tạo Dự Án Mới
 
 - ✅ Copy project này và đổi package name

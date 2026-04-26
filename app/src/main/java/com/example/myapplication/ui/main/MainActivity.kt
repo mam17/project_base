@@ -4,8 +4,10 @@ import android.os.CountDownTimer
 import android.view.View
 import com.example.ads.banner.presentation.enums.BannerAdKey
 import com.example.ads.banner.presentation.viewModels.ViewModelBanner
+import com.example.ads.interstitial.callbacks.InterstitialOnLoadCallBack
 import com.example.ads.interstitial.enums.InterAdKey
 import com.example.ads.natives.presentation.enums.NativeAdKey
+import com.example.ads.rewarded.callbacks.RewardedOnLoadCallBack
 import com.example.ads.rewarded.enums.RewardedAdKey
 import com.example.ads.utilities.extensions.addCleanView
 import com.example.myapplication.R
@@ -31,7 +33,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         setBaseFullScreen()
         binding.layoutFullScreenCount.root.gone()
         loadBanner()
-        loadInterstitialHome()
 
         binding.root.setOnClickListener {
             startNextActivity(LanguageActivity::class.java)
@@ -39,24 +40,45 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
         binding.btnShowInter.setOnClickListener {
             val action = { startNextActivity(LanguageActivity::class.java) }
-            showInterAd(
-                InterAdKey.INTER_HOME,
-                onDismiss = { showNativeHomeOverlay(action) },
-                onFailed = { showNativeHomeOverlay(action) }
+            diComponent.interstitialAdsConfig.loadInterstitialAd(
+                activity = this,
+                adType = InterAdKey.INTER_HOME,
+                listener = object : InterstitialOnLoadCallBack {
+                    override fun onResponse(successfullyLoaded: Boolean) {
+                        if (successfullyLoaded) {
+                            showInterAd(
+                                InterAdKey.INTER_HOME,
+                                onDismiss = { showNativeHomeOverlay(action) },
+                                onFailed = { showNativeHomeOverlay(action) }
+                            )
+                        } else {
+                            showNativeHomeOverlay(action)
+                        }
+                    }
+                }
             )
         }
 
         binding.btnShowReward.setOnClickListener {
-            showRewardedAd(
-                RewardedAdKey.AI_FEATURE,
-                onRewarded = { startNextActivity(LanguageActivity::class.java) },
-                onDismiss = { showToast("Ad reward loading") }
+            diComponent.rewardedAdsConfig.loadRewardedAd(
+                activity = this,
+                adType = RewardedAdKey.AI_FEATURE,
+                listener = object : RewardedOnLoadCallBack {
+                    override fun onResponse(isSuccess: Boolean) {
+                        if (isSuccess) {
+                            showRewardedAd(
+                                RewardedAdKey.AI_FEATURE,
+                                onRewarded = { },
+                                onDismiss = { startNextActivity(LanguageActivity::class.java) }
+                            )
+                        }
+                    }
+                }
             )
         }
     }
 
     override fun initData() {
-        loadRewardedAd(RewardedAdKey.AI_FEATURE)
         loadNativeAd(NativeAdKey.HOME, onLoaded = { homeNativeAd = it })
     }
 
@@ -105,10 +127,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private fun loadBanner() {
         val adView = AdView(this)
         viewModelBanner.loadBannerAd(adView, BannerAdKey.HOME)
-    }
-
-    private fun loadInterstitialHome() {
-        diComponent.interstitialAdsConfig.loadInterstitialAd(InterAdKey.INTER_HOME)
     }
 
     override fun onDestroy() {

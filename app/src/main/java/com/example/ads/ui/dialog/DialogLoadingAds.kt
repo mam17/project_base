@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.ViewGroup
 import com.example.myapplication.databinding.DialogLoadingBinding
 
 /**
@@ -19,6 +20,7 @@ class DialogLoadingAds(context: Context) : Dialog(context) {
         setContentView(binding.root)
 
         window?.setBackgroundDrawableResource(android.R.color.transparent)
+        window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         setCancelable(false)
         setCanceledOnTouchOutside(false)
     }
