@@ -10,6 +10,7 @@ import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
 import com.example.ads.utilities.InternetManager
 import com.example.ads.utilities.RevenueTracker
+import com.example.ads.utilities.MMPTracker
 
 
 class AppOpenAdsConfig(
@@ -32,6 +33,7 @@ class AppOpenAdsConfig(
         val wrappedListener = object : AppOpenOnLoadCallBack {
             override fun onResponse(successfullyLoaded: Boolean, errorMessage: String?) {
                 if (successfullyLoaded) {
+                    MMPTracker.trackAdRevenue(revenue = 0.3, adNetwork = "admob")
                     RevenueTracker.trackAdImpression(revenue = 0.3, source = "app_open", adNetwork = "admob")
                 }
                 listener?.onResponse(successfullyLoaded)
