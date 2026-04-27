@@ -10,6 +10,9 @@ import com.example.ads.natives.presentation.enums.NativeAdKey
 import com.example.ads.rewarded.callbacks.RewardedOnLoadCallBack
 import com.example.ads.rewarded.enums.RewardedAdKey
 import com.example.ads.utilities.extensions.addCleanView
+import com.example.ads.utilities.extensions.logButtonClick
+import com.example.ads.utilities.extensions.logScreenView
+import com.example.ads.utilities.extensions.trackMmpPurchase
 import com.example.myapplication.R
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityMainBinding
@@ -34,11 +37,16 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         binding.layoutFullScreenCount.root.gone()
         loadBanner()
 
+        logScreenView("MainActivity")
+
         binding.root.setOnClickListener {
             startNextActivity(LanguageActivity::class.java)
         }
 
         binding.btnShowInter.setOnClickListener {
+            logButtonClick("show_interstitial")
+            trackMmpAdRevenue(revenue = 0.5, adNetwork = "admob")
+
             val action = { startNextActivity(LanguageActivity::class.java) }
             diComponent.interstitialAdsConfig.loadInterstitialAd(
                 activity = this,
@@ -60,6 +68,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
 
         binding.btnShowReward.setOnClickListener {
+            logButtonClick("show_rewarded")
+
             diComponent.rewardedAdsConfig.loadRewardedAd(
                 activity = this,
                 adType = RewardedAdKey.AI_FEATURE,
@@ -68,7 +78,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                         if (isSuccess) {
                             showRewardedAd(
                                 RewardedAdKey.AI_FEATURE,
-                                onRewarded = { },
+                                onRewarded = {
+                                    trackMmpPurchase(revenue = 9.99, productId = "ai_feature_pack")
+                                },
                                 onDismiss = { startNextActivity(LanguageActivity::class.java) }
                             )
                         }
