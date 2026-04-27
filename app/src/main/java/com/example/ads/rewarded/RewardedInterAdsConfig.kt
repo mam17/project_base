@@ -12,19 +12,8 @@ import com.example.ads.utilities.InternetManager
 import com.example.ads.utilities.LoadingDialogHelper
 import com.example.ads.ui.dialog.DialogLoadingAds
 
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/17/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 
-/**
- * @param context: Can be of application class
- */
 class RewardedInterAdsConfig(
     private val context: Context?,
     private val sharedPreferenceUtils: SharedPreferenceUtils,

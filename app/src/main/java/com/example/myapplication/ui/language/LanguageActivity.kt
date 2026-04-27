@@ -7,6 +7,7 @@ import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityLanguageBinding
 import com.example.myapplication.ui.main.MainActivity
 import com.example.myapplication.ui.onboarding.OnboardingActivity
+import com.example.myapplication.utils.Constant.KEY_FROM_SPLASH
 import com.example.myapplication.utils.SystemUtil
 import com.example.myapplication.utils.ViewEx.gone
 import com.example.myapplication.utils.ViewEx.invisible
@@ -19,7 +20,7 @@ import kotlinx.coroutines.launch
 class LanguageActivity : BaseActivity<ActivityLanguageBinding>(ActivityLanguageBinding::inflate) {
     private val viewModel: LanguageViewModel by viewModels()
     private var mLanguageAdapter = LanguageAdapter()
-    private var isLanguageSelected = false
+    private var isFromSplash = false
 
     override fun initView() {
         initUI()
@@ -27,10 +28,11 @@ class LanguageActivity : BaseActivity<ActivityLanguageBinding>(ActivityLanguageB
     }
 
     private fun initListener() {
+        isFromSplash = intent.getBooleanExtra(KEY_FROM_SPLASH, false)
         binding.toolBarLanguage.btnSelect.setOnClickListener {
             mLanguageAdapter.getSelectedModel()?.let { model ->
                 SystemUtil.saveLanguage(this, model)
-                if (isLanguageSelected) {
+                if (isFromSplash) {
                     startNextActivity(MainActivity::class.java, isFinish = true)
                 } else {
                     startNextActivity(OnboardingActivity::class.java, isFinish = true)
@@ -49,10 +51,7 @@ class LanguageActivity : BaseActivity<ActivityLanguageBinding>(ActivityLanguageB
                 toolBarLanguage.btnSelect.invisible()
                 prLoading.visible()
                 mLanguageAdapter.selectItem(position)
-                if (!isLanguageSelected) {
-                    isLanguageSelected = true
-                    loadLanguage2Native()
-                }
+                loadLanguage2Native()
 
                 lifecycleScope.launch {
                     delay(3000)
@@ -68,12 +67,10 @@ class LanguageActivity : BaseActivity<ActivityLanguageBinding>(ActivityLanguageB
         loadNativeAd(
             key = NativeAdKey.LANGUAGE_1,
             onLoaded = { nativeAd ->
-                if (!isLanguageSelected) {
-                    binding.frNativeLang.adNativeType3.setNativeAd(nativeAd)
-                }
+                binding.frNativeLang.adNativeType3.setNativeAd(nativeAd)
             },
             onFailed = {
-                if (!isLanguageSelected) binding.frNativeLang.adNativeType3.gone()
+                binding.frNativeLang.adNativeType3.gone()
             }
         )
     }

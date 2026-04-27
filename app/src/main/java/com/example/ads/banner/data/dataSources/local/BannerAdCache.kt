@@ -3,14 +3,6 @@ package com.example.ads.banner.data.dataSources.local
 import com.example.ads.banner.data.entities.ItemBannerAd
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/17/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 class BannerAdCache {
 

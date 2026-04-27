@@ -13,14 +13,6 @@ import com.example.ads.rewarded.callbacks.RewardedOnLoadCallBack
 import com.example.ads.rewarded.callbacks.RewardedOnShowCallBack
 import com.example.ads.utilities.Constants.TAG_ADS
 
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/17/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 abstract class RewardedInterManager {
 

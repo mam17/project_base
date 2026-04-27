@@ -5,14 +5,6 @@ import android.view.View
 import android.view.ViewGroup
 import com.example.ads.utilities.Constants.TAG
 
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/17/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 fun ViewGroup.addCleanView(view: View?) {
     if (view == null) {

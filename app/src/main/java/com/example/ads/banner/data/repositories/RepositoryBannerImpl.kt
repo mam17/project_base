@@ -9,14 +9,6 @@ import com.example.ads.banner.presentation.enums.BannerAdType
 import com.example.ads.utilities.Constants
 import com.google.android.gms.ads.AdView
 
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/17/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 class RepositoryBannerImpl(
     private val dataSourceLocalBanner: DataSourceLocalBanner,

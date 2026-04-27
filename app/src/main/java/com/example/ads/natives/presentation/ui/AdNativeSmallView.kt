@@ -8,14 +8,6 @@ import androidx.core.view.isVisible
 import com.example.myapplication.databinding.LayoutNativeSmallBinding
 import com.google.android.gms.ads.nativead.NativeAd
 
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/16/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 class AdNativeSmallView @JvmOverloads constructor(
     context: Context,

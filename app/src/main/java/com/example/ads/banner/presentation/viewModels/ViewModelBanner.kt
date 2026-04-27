@@ -9,14 +9,6 @@ import com.example.ads.banner.domain.useCases.UseCaseBanner
 import com.example.ads.banner.presentation.enums.BannerAdKey
 import kotlinx.coroutines.launch
 
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/17/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 class ViewModelBanner(private val useCaseBanner: UseCaseBanner) : ViewModel() {
 

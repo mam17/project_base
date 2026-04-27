@@ -22,14 +22,10 @@ class MyApplication : Application() {
     }
 
     private fun initializeTracking() {
-        // Initialize Firebase Analytics tracking
         FirebaseTracker.initialize(this)
 
-        // Initialize revenue tracking (Facebook)
         RevenueTracker.initialize(this)
 
-        // Initialize MMP tracking (AppsFlyer)
-        // TODO: Replace with your AppsFlyer App ID from https://www.appsflyer.com
         val appsFlyerId = "YOUR_APPSFLYER_APP_ID"
         MMPTracker.initialize(this, appsFlyerId)
     }

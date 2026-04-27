@@ -13,14 +13,6 @@ import com.google.android.gms.ads.AdView
 import com.example.ads.utilities.InternetManager
 import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/17/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 class UseCaseBanner(
     private val repositoryBannerImpl: RepositoryBannerImpl,

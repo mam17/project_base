@@ -11,14 +11,6 @@ import com.example.myapplication.BuildConfig
 import com.example.myapplication.R
 import com.example.ads.utilities.InternetManager
 
-/**
- * Created by: Sohaib Ahmed
- * Date: 1/17/2025
- *
- * Links:
- * - LinkedIn: https://linkedin.com/in/epegasus
- * - GitHub: https://github.com/epegasus
- */
 
 class AppOpenAdsConfig(
     private val context: Context,
