@@ -8,7 +8,6 @@ import com.example.ads.appOpen.screen.enums.AppOpenAdKey
 import com.example.ads.appOpen.screen.manager.AppOpenManager
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
-import com.example.myapplication.R
 import com.example.ads.utilities.InternetManager
 import com.example.ads.utilities.RevenueTracker
 
@@ -31,11 +30,11 @@ class AppOpenAdsConfig(
         }
 
         val wrappedListener = object : AppOpenOnLoadCallBack {
-            override fun onResponse(isLoaded: Boolean) {
-                if (isLoaded) {
+            override fun onResponse(successfullyLoaded: Boolean, errorMessage: String?) {
+                if (successfullyLoaded) {
                     RevenueTracker.trackAdImpression(revenue = 0.3, source = "app_open", adNetwork = "admob")
                 }
-                listener?.onResponse(isLoaded)
+                listener?.onResponse(successfullyLoaded)
             }
         }
 
