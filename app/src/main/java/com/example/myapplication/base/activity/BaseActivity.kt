@@ -339,6 +339,34 @@ abstract class BaseActivity<VB : ViewBinding>(
         )
     }
 
+    // --- Interstitial Ad ---
+
+    protected fun showInterAd(
+        adKey: InterAdKey,
+        onDismiss: () -> Unit = {},
+        onFailed: () -> Unit = {}
+    ) {
+        showAd(
+            adKey = AdKey.Interstitial(adKey),
+            onDismiss = onDismiss,
+            onFailed = onFailed
+        )
+    }
+
+    // --- Rewarded Ad ---
+
+    protected fun showRewardedAd(
+        adKey: RewardedAdKey,
+        onRewarded: () -> Unit = {},
+        onDismiss: () -> Unit = {}
+    ) {
+        showAd(
+            adKey = AdKey.Rewarded(adKey),
+            onDismiss = onDismiss,
+            onRewarded = onRewarded
+        )
+    }
+
     // --- Banner ---
 
     protected fun loadBannerAd(adView: AdView, key: BannerAdKey, onLoaded: (AdView) -> Unit, onFailed: () -> Unit = {}) {
