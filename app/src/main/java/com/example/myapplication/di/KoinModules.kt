@@ -11,6 +11,8 @@ import com.example.ads.banner.data.repositories.RepositoryBannerImpl
 import com.example.ads.banner.domain.useCases.UseCaseBanner
 import com.example.ads.banner.presentation.viewModels.ViewModelBanner
 import com.example.ads.interstitial.InterstitialAdsConfig
+import com.example.ads.mediator.AdsMediator
+import com.example.ads.mediator.config.MediationConfig
 import com.example.ads.rewarded.RewardedAdsConfig
 import com.example.ads.rewarded.RewardedInterAdsConfig
 import com.example.ads.natives.data.dataSources.local.DataSourceLocalNative
@@ -18,6 +20,7 @@ import com.example.ads.natives.data.dataSources.remote.DataSourceRemoteNative
 import com.example.ads.natives.data.repositories.RepositoryNativeImpl
 import com.example.ads.natives.domain.useCases.UseCaseNative
 import com.example.ads.natives.presentation.viewModels.ViewModelNative
+import com.example.ads.utilities.LoadingDialogHelper
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.ads.utilities.firebase.RemoteConfiguration
 import com.example.ads.utilities.InternetManager
@@ -77,5 +80,23 @@ class KoinModules {
         viewModel { ViewModelNative(get()) }
     }
 
-    val modulesList = listOf(utilsModules, managerModules, firebaseModule, appOpenAdModule, bannerAdModule, interAdModule, nativeAdModule)
+    private val mediationModule = module {
+        single { MediationConfig() }
+        single {
+            AdsMediator(
+                context = androidContext(),
+                interstitialAdsConfig = get(),
+                rewardedAdsConfig = get(),
+                rewardedInterAdsConfig = get(),
+                appOpenAdsConfig = get(),
+                viewModelBanner = get(),
+                viewModelNative = get(),
+                sharedPreferenceUtils = get(),
+                loadingDialogHelper = LoadingDialogHelper,
+                mediationConfig = get()
+            )
+        }
+    }
+
+    val modulesList = listOf(utilsModules, managerModules, firebaseModule, appOpenAdModule, bannerAdModule, interAdModule, nativeAdModule, mediationModule)
 }

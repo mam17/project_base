@@ -3,6 +3,7 @@ package com.example.myapplication.di
 import com.example.ads.appOpen.application.AppOpenAdManager
 import com.example.ads.appOpen.screen.AppOpenAdsConfig
 import com.example.ads.interstitial.InterstitialAdsConfig
+import com.example.ads.mediator.AdsMediator
 import com.example.ads.rewarded.RewardedAdsConfig
 import com.example.ads.rewarded.RewardedInterAdsConfig
 import com.example.ads.utilities.SharedPreferenceUtils
@@ -31,4 +32,7 @@ class DIComponent : KoinComponent {
     val interstitialAdsConfig by inject<InterstitialAdsConfig>()
     val rewardedAdsConfig by inject<RewardedAdsConfig>()
     val rewardedInterAdsConfig by inject<RewardedInterAdsConfig>()
+
+    // Mediation
+    val adsMediator by inject<AdsMediator>()
 }

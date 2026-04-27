@@ -19,18 +19,15 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.viewbinding.ViewBinding
-import com.example.ads.appOpen.screen.callbacks.AppOpenOnLoadCallBack
-import com.example.ads.appOpen.screen.callbacks.AppOpenOnShowCallBack
 import com.example.ads.appOpen.screen.enums.AppOpenAdKey
 import com.example.ads.banner.presentation.enums.BannerAdKey
 import com.example.ads.banner.presentation.viewModels.ViewModelBanner
-import com.example.ads.interstitial.callbacks.InterstitialOnLoadCallBack
-import com.example.ads.interstitial.callbacks.InterstitialOnShowCallBack
 import com.example.ads.interstitial.enums.InterAdKey
+import com.example.ads.mediator.AdKey
+import com.example.ads.mediator.callbacks.AdLoadCallback
+import com.example.ads.mediator.callbacks.AdShowCallback
 import com.example.ads.natives.presentation.enums.NativeAdKey
 import com.example.ads.natives.presentation.viewModels.ViewModelNative
-import com.example.ads.rewarded.callbacks.RewardedOnLoadCallBack
-import com.example.ads.rewarded.callbacks.RewardedOnShowCallBack
 import com.example.ads.rewarded.enums.RewardedAdKey
 import com.example.ads.rewarded.enums.RewardedInterAdKey
 import com.google.android.gms.ads.AdView
@@ -293,66 +290,53 @@ abstract class BaseActivity<VB : ViewBinding>(
         }
     }
 
-    // --- Interstitial ---
+    // ===== Unified Ads Mediation API =====
 
-    protected fun loadInterAd(adType: InterAdKey, onResponse: (Boolean) -> Unit = {}) {
-        diComponent.interstitialAdsConfig.loadInterstitialAd(adType, object : InterstitialOnLoadCallBack {
-            override fun onResponse(successfullyLoaded: Boolean) = onResponse(successfullyLoaded)
-        })
+    protected val adsMediator by lazy { diComponent.adsMediator }
+
+    /**
+     * Load any ad type with unified API.
+     * @param adKey Unified ad key (supports Interstitial, Rewarded, RewardedInterstitial, AppOpen, Banner, Native)
+     * @param onSuccess Called when ad loads successfully
+     * @param onFailure Called when ad fails to load
+     */
+    protected fun loadAd(
+        adKey: AdKey,
+        onSuccess: () -> Unit = {},
+        onFailure: (String?) -> Unit = {}
+    ) {
+        adsMediator.loadAd(
+            activity = this,
+            adKey = adKey,
+            callback = object : AdLoadCallback {
+                override fun onSuccess() = onSuccess()
+                override fun onFailure(errorMessage: String?) = onFailure(errorMessage)
+            }
+        )
     }
 
-    protected fun showInterAd(adType: InterAdKey, onDismiss: () -> Unit = {}, onFailed: () -> Unit = {}) {
-        diComponent.interstitialAdsConfig.showInterstitialAd(this, adType, object : InterstitialOnShowCallBack {
-            override fun onAdDismissedFullScreenContent() = onDismiss()
-            override fun onAdFailedToShow() = onFailed()
-        })
-    }
-
-    // --- App Open ---
-
-    protected fun loadAppOpenAd(adType: AppOpenAdKey, onResponse: (Boolean) -> Unit = {}) {
-        diComponent.appOpenAdsConfig.loadAppOpenAd(adType, object : AppOpenOnLoadCallBack {
-            override fun onResponse(successfullyLoaded: Boolean, errorMessage: String?) = onResponse(successfullyLoaded)
-        })
-    }
-
-    protected fun showAppOpenAd(adType: AppOpenAdKey, onDismiss: () -> Unit = {}, onFailed: () -> Unit = {}) {
-        diComponent.appOpenAdsConfig.showAppOpenAd(this, adType, object : AppOpenOnShowCallBack {
-            override fun onAdDismissedFullScreenContent() = onDismiss()
-            override fun onAdFailedToShow() = onFailed()
-        })
-    }
-
-    // --- Rewarded ---
-
-    protected fun loadRewardedAd(adType: RewardedAdKey, onResponse: (Boolean) -> Unit = {}) {
-        diComponent.rewardedAdsConfig.loadRewardedAd(adType, object : RewardedOnLoadCallBack {
-            override fun onResponse(isSuccess: Boolean) = onResponse(isSuccess)
-        })
-    }
-
-    protected fun showRewardedAd(adType: RewardedAdKey, onRewarded: () -> Unit = {}, onDismiss: () -> Unit = {}, onFailed: () -> Unit = {}) {
-        diComponent.rewardedAdsConfig.showRewardedAd(this, adType, object : RewardedOnShowCallBack {
-            override fun onUserEarnedReward() = onRewarded()
-            override fun onAdDismissedFullScreenContent() = onDismiss()
-            override fun onAdFailedToShow() = onFailed()
-        })
-    }
-
-    // --- Rewarded Interstitial ---
-
-    protected fun loadRewardedInterAd(adType: RewardedInterAdKey, onResponse: (Boolean) -> Unit = {}) {
-        diComponent.rewardedInterAdsConfig.loadRewardedInterAd(adType, object : RewardedOnLoadCallBack {
-            override fun onResponse(isSuccess: Boolean) = onResponse(isSuccess)
-        })
-    }
-
-    protected fun showRewardedInterAd(adType: RewardedInterAdKey, onRewarded: () -> Unit = {}, onDismiss: () -> Unit = {}, onFailed: () -> Unit = {}) {
-        diComponent.rewardedInterAdsConfig.showRewardedInterAd(this, adType, object : RewardedOnShowCallBack {
-            override fun onUserEarnedReward() = onRewarded()
-            override fun onAdDismissedFullScreenContent() = onDismiss()
-            override fun onAdFailedToShow() = onFailed()
-        })
+    /**
+     * Show any ad type with unified API.
+     * @param adKey Unified ad key
+     * @param onDismiss Called when user dismisses ad
+     * @param onFailed Called when ad fails to show
+     * @param onRewarded Called when user earns reward (Rewarded/RewardedInterstitial only)
+     */
+    protected fun showAd(
+        adKey: AdKey,
+        onDismiss: () -> Unit = {},
+        onFailed: () -> Unit = {},
+        onRewarded: () -> Unit = {}
+    ) {
+        adsMediator.showAd(
+            activity = this,
+            adKey = adKey,
+            callback = object : AdShowCallback {
+                override fun onAdDismissed() = onDismiss()
+                override fun onAdFailedToShow() = onFailed()
+                override fun onRewardEarned() = onRewarded()
+            }
+        )
     }
 
     // --- Banner ---
