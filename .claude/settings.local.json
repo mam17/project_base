@@ -4,7 +4,15 @@
       "Bash(git merge *)",
       "Bash(cd /d \"D:\\\\My Project\\\\BaseProject\")",
       "Bash(gradlew.bat clean *)",
-      "Bash(./gradlew.bat clean *)"
+      "Bash(./gradlew.bat clean *)",
+      "Bash(./gradlew compileDebugKotlin --no-daemon)",
+      "PowerShell(java -version 2>&1)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -m 'fix: remove onAdClicked override from toRewardedShowCallback *)",
+      "Bash(./gradlew clean *)",
+      "Bash(timeout 120 ./gradlew build --info)",
+      "Bash(git reset *)"
     ]
   }
 }

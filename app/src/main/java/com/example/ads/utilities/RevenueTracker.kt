@@ -149,8 +149,8 @@ object RevenueTracker {
             }
 
             val facebookEventName = when (eventName) {
-                "Purchase" -> AppEventsLogger.EVENT_NAME_PURCHASED
-                "Subscribe" -> AppEventsLogger.EVENT_NAME_SUBSCRIBE
+                "Purchase" -> "Purchase"
+                "Subscribe" -> "Subscribe"
                 "AdImpression" -> "ad_impression"
                 else -> eventName
             }

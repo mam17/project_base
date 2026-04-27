@@ -6,6 +6,7 @@ import com.adjust.sdk.Adjust
 import com.adjust.sdk.AdjustEvent
 import com.appsflyer.AppsFlyerLib
 import com.appsflyer.attribution.AppsFlyerRequestListener
+import java.lang.ref.WeakReference
 import java.util.UUID
 
 /**
@@ -16,7 +17,7 @@ import java.util.UUID
 object MMPTracker {
 
     private const val TAG = "MMPTracker"
-    private var context: Context? = null
+    private var contextRef: WeakReference<Context>? = null
 
     // Adjust Event Token IDs (configure in Adjust Dashboard)
     object AdjustEvents {
@@ -40,7 +41,7 @@ object MMPTracker {
     }
 
     fun initialize(context: Context, appsFlyerId: String) {
-        this.context = context
+        this.contextRef = WeakReference(context)
 
         try {
             // Initialize AppsFlyer
@@ -258,7 +259,7 @@ object MMPTracker {
         eventValue: Map<String, String>
     ) {
         try {
-            val ctx = context ?: return
+            val ctx = contextRef?.get() ?: return
             AppsFlyerLib.getInstance().logEvent(
                 ctx,
                 eventName,
