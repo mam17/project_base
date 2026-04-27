@@ -1,9 +1,12 @@
 package com.example.myapplication
 
 import android.app.Application
+import com.example.ads.utilities.FirebaseTracker
+import com.example.ads.utilities.MMPTracker
 import com.example.ads.utilities.RevenueTracker
 import com.example.myapplication.di.KoinModules
 import com.example.myapplication.utils.SpManager
+import com.example.myapplication.BuildConfig
 import dagger.hilt.android.HiltAndroidApp
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -15,11 +18,20 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         initKoin()
-        initializeRevenueTracking()
+        initializeTracking()
     }
 
-    private fun initializeRevenueTracking() {
+    private fun initializeTracking() {
+        // Initialize Firebase Analytics tracking
+        FirebaseTracker.initialize(this)
+
+        // Initialize revenue tracking (Facebook, TikTok)
         RevenueTracker.initialize(this)
+
+        // Initialize MMP tracking (Adjust, AppsFlyer)
+        // TODO: Replace with your AppsFlyer App ID from https://www.appsflyer.com
+        val appsFlyerId = "YOUR_APPSFLYER_APP_ID"
+        MMPTracker.initialize(this, appsFlyerId)
     }
     private fun initKoin() {
         startKoin {
