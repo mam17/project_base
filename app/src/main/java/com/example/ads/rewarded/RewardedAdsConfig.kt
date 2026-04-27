@@ -76,26 +76,26 @@ class RewardedAdsConfig(
     ) {
         val wrappedListener = if (activity != null) {
             object : RewardedOnShowCallBack {
-                override fun onAdDismissed() {
-                    listener?.onAdDismissed()
+                override fun onAdDismissedFullScreenContent() {
+                    listener?.onAdDismissedFullScreenContent()
                 }
 
                 override fun onAdFailedToShow() {
                     listener?.onAdFailedToShow()
                 }
 
-                override fun onAdShowed() {
-                    listener?.onAdShowed()
+                override fun onAdShowedFullScreenContent() {
+                    listener?.onAdShowedFullScreenContent()
                 }
 
-                override fun onAdClicked() {
-                    listener?.onAdClicked()
+                override fun onAdImpression() {
+                    listener?.onAdImpression()
                 }
 
-                override fun onRewardEarned() {
+                override fun onUserEarnedReward() {
                     activity.trackMmpPurchase(revenue = 9.99, productId = "reward_${adType.value}")
                     RevenueTracker.trackPurchase(revenue = 9.99, productId = "reward_${adType.value}", quantity = 1)
-                    listener?.onRewardEarned()
+                    listener?.onUserEarnedReward()
                 }
             }
         } else {

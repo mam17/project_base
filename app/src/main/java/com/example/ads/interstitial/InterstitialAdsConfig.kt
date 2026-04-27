@@ -48,7 +48,7 @@ class InterstitialAdsConfig(
             override fun onResponse(successfullyLoaded: Boolean) {
                 if (successfullyLoaded) {
                     if (activity != null) {
-                        activity.trackMmpAdRevenue(revenue = 0.5, adNetwork = "admob")
+                       trackMmpAdRevenue(revenue = 0.5, adNetwork = "admob")
                     }
                     RevenueTracker.trackAdImpression(revenue = 0.5, source = "interstitial", adNetwork = "admob")
                 }
