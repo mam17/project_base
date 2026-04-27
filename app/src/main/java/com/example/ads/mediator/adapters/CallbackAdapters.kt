@@ -85,10 +85,6 @@ internal object CallbackAdapters {
                 callback?.onRewardEarned()
             }
 
-            override fun onAdClicked() {
-                callback?.onAdClicked()
-            }
-
             override fun onAdImpression() {}
         }
     }
