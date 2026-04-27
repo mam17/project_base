@@ -3,20 +3,17 @@ package com.example.ads.utilities
 import android.content.Context
 import android.util.Log
 import com.facebook.appevents.AppEventsLogger
-import com.tiktok.business.api.TikTokBusinessSdk
-import com.tiktok.business.api.AppEventLogger
 import java.math.BigDecimal
 import java.util.Currency
 
 /**
- * Utility class to track revenue events for Facebook and TikTok SDKs.
+ * Utility class to track revenue events for Facebook SDK.
  * Used for app monetization tracking, ad revenue, in-app purchases, etc.
  */
 object RevenueTracker {
 
     private const val TAG = "RevenueTracker"
     private var facebookLogger: AppEventsLogger? = null
-    private var tikTokLogger: AppEventLogger? = null
 
     fun initialize(context: Context) {
         try {
@@ -25,14 +22,6 @@ object RevenueTracker {
             Log.d(TAG, "Facebook AppEventsLogger initialized")
         } catch (e: Exception) {
             Log.e(TAG, "Error initializing Facebook logger", e)
-        }
-
-        try {
-            // Initialize TikTok logger
-            tikTokLogger = TikTokBusinessSdk.getAppEventLogger()
-            Log.d(TAG, "TikTok AppEventLogger initialized")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error initializing TikTok logger", e)
         }
     }
 
@@ -144,9 +133,6 @@ object RevenueTracker {
 
         // Track to Facebook
         trackToFacebook(revenue, currency, eventName, customData)
-
-        // Track to TikTok
-        trackToTikTok(revenue, currency, eventName, customData)
     }
 
     private fun trackToFacebook(
@@ -176,32 +162,4 @@ object RevenueTracker {
         }
     }
 
-    private fun trackToTikTok(
-        revenue: Double,
-        currency: String,
-        eventName: String,
-        customData: Map<String, Any>
-    ) {
-        try {
-            val logger = tikTokLogger ?: return
-
-            val tikTokEventName = when (eventName) {
-                "Purchase" -> "Purchase"
-                "Subscribe" -> "Subscribe"
-                "AdImpression" -> "AdImpression"
-                else -> eventName
-            }
-
-            val properties = customData.toMutableMap().apply {
-                put("value", revenue.toString())
-                put("currency", currency)
-                put("timestamp", System.currentTimeMillis())
-            }
-
-            logger.trackEvent(tikTokEventName, properties)
-            Log.d(TAG, "Tracked to TikTok: $tikTokEventName - $$revenue $currency")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error tracking to TikTok: $eventName", e)
-        }
-    }
 }
