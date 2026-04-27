@@ -48,7 +48,6 @@ abstract class BaseActivity<VB : ViewBinding>(
 
     private var _binding: VB? = null
     protected val binding get() = _binding!!
-    @Inject
     lateinit var spManager: SpManager
 
     private var dialogLoading: DialogLoading? = null
@@ -63,6 +62,7 @@ abstract class BaseActivity<VB : ViewBinding>(
         _binding = bindingInflater(layoutInflater)
         setContentView(binding.root)
 
+        spManager = SpManager.get(this)
         applySystemBarInsets()
 //        setBaseDefault()
         setBaseStatusBar(isVisible = true, isLightIcons = true)

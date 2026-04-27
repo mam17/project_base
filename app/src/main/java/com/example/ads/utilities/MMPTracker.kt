@@ -2,33 +2,20 @@ package com.example.ads.utilities
 
 import android.content.Context
 import android.util.Log
-import com.adjust.sdk.Adjust
-import com.adjust.sdk.AdjustEvent
 import com.appsflyer.AppsFlyerLib
 import com.appsflyer.attribution.AppsFlyerRequestListener
 import java.lang.ref.WeakReference
 import java.util.UUID
 
 /**
- * Unified Mobile Measurement Partner (MMP) tracker.
- * Integrates Adjust and AppsFlyer for attribution and ROAS tracking.
+ * Mobile Measurement Partner (MMP) tracker for AppsFlyer.
+ * Integrates AppsFlyer for attribution and ROAS tracking.
  * Used for: install tracking, in-app events, revenue tracking, ROAS measurement.
  */
 object MMPTracker {
 
     private const val TAG = "MMPTracker"
     private var contextRef: WeakReference<Context>? = null
-
-    // Adjust Event Token IDs (configure in Adjust Dashboard)
-    object AdjustEvents {
-        const val PURCHASE = "abc123"              // Configure in Adjust
-        const val SUBSCRIPTION = "def456"          // Configure in Adjust
-        const val AD_IMPRESSION = "ghi789"         // Configure in Adjust
-        const val APP_OPEN = "jkl012"              // Configure in Adjust
-        const val TUTORIAL_COMPLETE = "mno345"     // Configure in Adjust
-        const val LEVEL_ACHIEVED = "pqr678"        // Configure in Adjust
-        const val CUSTOM_EVENT = "stu901"          // Configure in Adjust
-    }
 
     // AppsFlyer Event Names (predefined constants)
     object AppsFlyerEvents {
@@ -49,14 +36,6 @@ object MMPTracker {
             Log.d(TAG, "AppsFlyer initialized")
         } catch (e: Exception) {
             Log.e(TAG, "Error initializing AppsFlyer", e)
-        }
-
-        try {
-            // Initialize Adjust
-            initializeAdjust(context)
-            Log.d(TAG, "Adjust initialized")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error initializing Adjust", e)
         }
     }
 
@@ -82,13 +61,6 @@ object MMPTracker {
             ).plus(customData)
         )
 
-        trackToAdjust(
-            eventToken = AdjustEvents.PURCHASE,
-            revenue = revenue,
-            currency = currency,
-            customData = customData
-        )
-
         Log.d(TAG, "Purchase tracked: $$revenue $currency")
     }
 
@@ -110,13 +82,6 @@ object MMPTracker {
                 "af_subscription_id" to subscriptionId,
                 "af_period" to period
             ).plus(customData)
-        )
-
-        trackToAdjust(
-            eventToken = AdjustEvents.SUBSCRIPTION,
-            revenue = revenue,
-            currency = currency,
-            customData = customData
         )
 
         Log.d(TAG, "Subscription tracked: $$revenue $currency")
@@ -144,13 +109,6 @@ object MMPTracker {
             ).plus(customData)
         )
 
-        trackToAdjust(
-            eventToken = AdjustEvents.AD_IMPRESSION,
-            revenue = revenue,
-            currency = currency,
-            customData = customData
-        )
-
         Log.d(TAG, "Ad revenue tracked: $$revenue from $adNetwork")
     }
 
@@ -163,11 +121,6 @@ object MMPTracker {
         trackToAppsFlyer(
             eventName = AppsFlyerEvents.TUTORIAL_COMPLETE,
             eventValue = customData
-        )
-
-        trackToAdjust(
-            eventToken = AdjustEvents.TUTORIAL_COMPLETE,
-            customData = customData
         )
 
         Log.d(TAG, "Tutorial completed")
@@ -185,11 +138,6 @@ object MMPTracker {
             eventValue = mapOf(
                 "af_level" to level.toString()
             ).plus(customData)
-        )
-
-        trackToAdjust(
-            eventToken = AdjustEvents.LEVEL_ACHIEVED,
-            customData = customData.plus("level" to level.toString())
         )
 
         Log.d(TAG, "Level achieved: $level")
@@ -219,13 +167,6 @@ object MMPTracker {
             eventValue = afEventValue
         )
 
-        trackToAdjust(
-            eventToken = AdjustEvents.CUSTOM_EVENT,
-            revenue = eventValue,
-            currency = currency,
-            customData = customData.plus("event_name" to eventName)
-        )
-
         Log.d(TAG, "Custom event tracked: $eventName")
     }
 
@@ -246,12 +187,6 @@ object MMPTracker {
         }
     }
 
-    private fun initializeAdjust(context: Context) {
-        // Note: Configure Adjust token in AndroidManifest.xml or via AdjustConfig
-        // This is a basic initialization - adjust based on your Adjust setup
-        Log.d(TAG, "Adjust initialized")
-    }
-
     // ===== Private Helpers =====
 
     private fun trackToAppsFlyer(
@@ -268,28 +203,6 @@ object MMPTracker {
             Log.d(TAG, "AppsFlyer event tracked: $eventName")
         } catch (e: Exception) {
             Log.e(TAG, "Error tracking to AppsFlyer: $eventName", e)
-        }
-    }
-
-    private fun trackToAdjust(
-        eventToken: String,
-        revenue: Double? = null,
-        currency: String = "USD",
-        customData: Map<String, String> = emptyMap()
-    ) {
-        try {
-            val adjustEvent = AdjustEvent(eventToken).apply {
-                if (revenue != null) {
-                    setRevenue(revenue, currency)
-                }
-                customData.forEach { (key, value) ->
-                    addCallbackParameter(key, value)
-                }
-            }
-            Adjust.trackEvent(adjustEvent)
-            Log.d(TAG, "Adjust event tracked: $eventToken")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error tracking to Adjust: $eventToken", e)
         }
     }
 }
