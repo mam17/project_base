@@ -165,6 +165,9 @@ dependencies {
     //Facebook SDK
     implementation("com.facebook.android:facebook-android-sdk:18.1.3")
 
+    //TikTok SDK (Business SDK)
+    implementation("com.tiktok.business:ads:0.9.14")
+
     //Mediation admob
     implementation("com.google.ads.mediation:facebook:6.20.0.0")
     implementation("com.google.ads.mediation:applovin:13.3.1.0")
