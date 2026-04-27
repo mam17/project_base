@@ -8,10 +8,13 @@ import android.util.Log
 import com.example.ads.interstitial.callbacks.InterstitialOnLoadCallBack
 import com.example.ads.interstitial.callbacks.InterstitialOnShowCallBack
 import com.example.ads.utilities.Constants.TAG_ADS
+import com.example.ads.utilities.MMPTracker
+import com.example.ads.utilities.RevenueTracker
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
@@ -96,6 +99,15 @@ abstract class InterstitialManager {
                     Log.i(TAG_ADS, "$adType -> loadInterstitial: onAdLoaded")
                     isInterLoading = false
                     mInterstitialAd = interstitialAd
+
+                    interstitialAd.onPaidEventListener = OnPaidEventListener { adValue ->
+                        val revenueInUsd = adValue.valueMicros / 1_000_000.0
+                        val currency = adValue.currencyCode
+                        Log.d(TAG_ADS, "$adType -> onPaidEvent: $revenueInUsd $currency")
+                        MMPTracker.trackAdRevenue(revenue = revenueInUsd, currency = currency, adNetwork = "admob")
+                        RevenueTracker.trackAdImpression(revenue = revenueInUsd, currency = currency, source = "interstitial", adNetwork = "admob")
+                    }
+
                     listener?.onResponse(true)
                 }
             })

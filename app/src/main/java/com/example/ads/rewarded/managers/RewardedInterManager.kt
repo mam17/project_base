@@ -7,11 +7,14 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import com.example.ads.rewarded.callbacks.RewardedOnLoadCallBack
 import com.example.ads.rewarded.callbacks.RewardedOnShowCallBack
 import com.example.ads.utilities.Constants.TAG_ADS
+import com.example.ads.utilities.MMPTracker
+import com.example.ads.utilities.RevenueTracker
 
 
 abstract class RewardedInterManager {
@@ -91,6 +94,15 @@ abstract class RewardedInterManager {
                     Log.i(TAG_ADS, "$adType -> loadRewardedInter: onAdLoaded")
                     isRewardedInterLoading = false
                     mRewardedInterstitialAd = rewardedInterstitialAd
+
+                    rewardedInterstitialAd.onPaidEventListener = OnPaidEventListener { adValue ->
+                        val revenueInUsd = adValue.valueMicros / 1_000_000.0
+                        val currency = adValue.currencyCode
+                        Log.d(TAG_ADS, "$adType -> onPaidEvent: $revenueInUsd $currency")
+                        MMPTracker.trackAdRevenue(revenue = revenueInUsd, currency = currency, adNetwork = "admob")
+                        RevenueTracker.trackAdImpression(revenue = revenueInUsd, currency = currency, source = "rewarded_inter", adNetwork = "admob")
+                    }
+
                     listener?.onResponse(true)
                 }
             })

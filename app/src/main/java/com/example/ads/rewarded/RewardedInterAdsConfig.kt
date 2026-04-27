@@ -11,9 +11,6 @@ import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.ads.utilities.InternetManager
 import com.example.ads.utilities.LoadingDialogHelper
 import com.example.ads.ui.dialog.DialogLoadingAds
-import com.example.ads.utilities.extensions.trackMmpAdRevenue
-import com.example.ads.utilities.extensions.trackMmpPurchase
-import com.example.ads.utilities.RevenueTracker
 
 
 
@@ -48,18 +45,7 @@ class RewardedInterAdsConfig(
             null
         }
 
-        val wrappedListener = LoadingDialogHelper.wrapRewardedCallback(loadingDialog, object : RewardedOnLoadCallBack {
-            override fun onResponse(isSuccess: Boolean) {
-                if (isSuccess) {
-                    // TODO: Replace with actual revenue from OnPaidEventListener (AdMob's AdValue.valueMicros / 1_000_000.0)
-                    if (activity != null) {
-                        trackMmpAdRevenue(revenue = 0.0, adNetwork = "admob")
-                    }
-                    RevenueTracker.trackAdImpression(revenue = 0.0, source = "rewarded_inter", adNetwork = "admob")
-                }
-                listener?.onResponse(isSuccess)
-            }
-        })
+        val wrappedListener = LoadingDialogHelper.wrapRewardedCallback(loadingDialog, listener)
 
         loadRewardedInter(
             context = context,
@@ -77,40 +63,11 @@ class RewardedInterAdsConfig(
         adType: RewardedInterAdKey,
         listener: RewardedOnShowCallBack? = null
     ) {
-        val wrappedListener = if (activity != null) {
-            object : RewardedOnShowCallBack {
-                override fun onAdDismissedFullScreenContent() {
-                    listener?.onAdDismissedFullScreenContent()
-                }
-
-                override fun onAdFailedToShow() {
-                    listener?.onAdFailedToShow()
-                }
-
-                override fun onAdShowedFullScreenContent() {
-                    listener?.onAdShowedFullScreenContent()
-                }
-
-                override fun onAdImpression() {
-                    listener?.onAdImpression()
-                }
-
-                override fun onUserEarnedReward() {
-                    // TODO: Replace with actual reward value (set based on your business logic, e.g., in-app currency value)
-                    trackMmpPurchase(revenue = 0.0, productId = "reward_inter_${adType.value}")
-                    RevenueTracker.trackPurchase(revenue = 0.0, productId = "reward_inter_${adType.value}", quantity = 1)
-                    listener?.onUserEarnedReward()
-                }
-            }
-        } else {
-            listener
-        }
-
         showRewardedInter(
             activity = activity,
             adType = adType.value,
             isAppPurchased = sharedPreferenceUtils.isAppPurchased,
-            wrappedListener
+            listener
         )
     }
 }

@@ -7,11 +7,14 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.example.ads.rewarded.callbacks.RewardedOnLoadCallBack
 import com.example.ads.rewarded.callbacks.RewardedOnShowCallBack
 import com.example.ads.utilities.Constants.TAG_ADS
+import com.example.ads.utilities.MMPTracker
+import com.example.ads.utilities.RevenueTracker
 
 
 abstract class RewardedManager {
@@ -91,6 +94,15 @@ abstract class RewardedManager {
                     Log.i(TAG_ADS, "$adType -> loadRewarded: onAdLoaded")
                     isRewardedLoading = false
                     mRewardedAd = rewardedAd
+
+                    rewardedAd.onPaidEventListener = OnPaidEventListener { adValue ->
+                        val revenueInUsd = adValue.valueMicros / 1_000_000.0
+                        val currency = adValue.currencyCode
+                        Log.d(TAG_ADS, "$adType -> onPaidEvent: $revenueInUsd $currency")
+                        MMPTracker.trackAdRevenue(revenue = revenueInUsd, currency = currency, adNetwork = "admob")
+                        RevenueTracker.trackAdImpression(revenue = revenueInUsd, currency = currency, source = "rewarded", adNetwork = "admob")
+                    }
+
                     listener?.onResponse(true)
                 }
             })
