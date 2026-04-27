@@ -52,7 +52,7 @@ class RewardedInterAdsConfig(
             override fun onResponse(isSuccess: Boolean) {
                 if (isSuccess) {
                     if (activity != null) {
-                        activity.trackMmpAdRevenue(revenue = 1.5, adNetwork = "admob")
+                        trackMmpAdRevenue(revenue = 1.5, adNetwork = "admob")
                     }
                     RevenueTracker.trackAdImpression(revenue = 1.5, source = "rewarded_inter", adNetwork = "admob")
                 }
@@ -95,7 +95,7 @@ class RewardedInterAdsConfig(
                 }
 
                 override fun onUserEarnedReward() {
-                    activity.trackMmpPurchase(revenue = 14.99, productId = "reward_inter_${adType.value}")
+                    trackMmpPurchase(revenue = 14.99, productId = "reward_inter_${adType.value}")
                     RevenueTracker.trackPurchase(revenue = 14.99, productId = "reward_inter_${adType.value}", quantity = 1)
                     listener?.onUserEarnedReward()
                 }

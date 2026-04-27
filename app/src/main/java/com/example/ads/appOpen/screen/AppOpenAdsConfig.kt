@@ -10,6 +10,7 @@ import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
 import com.example.myapplication.R
 import com.example.ads.utilities.InternetManager
+import com.example.ads.utilities.RevenueTracker
 
 
 class AppOpenAdsConfig(
@@ -29,6 +30,15 @@ class AppOpenAdsConfig(
             }
         }
 
+        val wrappedListener = object : AppOpenOnLoadCallBack {
+            override fun onResponse(isLoaded: Boolean) {
+                if (isLoaded) {
+                    RevenueTracker.trackAdImpression(revenue = 0.3, source = "app_open", adNetwork = "admob")
+                }
+                listener?.onResponse(isLoaded)
+            }
+        }
+
         loadAppOpen(
             context = context,
             adType = adType.value,
@@ -36,7 +46,7 @@ class AppOpenAdsConfig(
             adEnable = isRemoteEnable,
             isAppPurchased = sharedPreferenceUtils.isAppPurchased,
             isInternetConnected = internetManager.isInternetConnected,
-            listener = listener
+            listener = wrappedListener
         )
     }
 

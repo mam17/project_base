@@ -45,7 +45,7 @@ class RewardedAdsConfig(
             override fun onResponse(isSuccess: Boolean) {
                 if (isSuccess) {
                     if (activity != null) {
-                        activity.trackMmpAdRevenue(revenue = 1.0, adNetwork = "admob")
+                        trackMmpAdRevenue(revenue = 1.0, adNetwork = "admob")
                     }
                     RevenueTracker.trackAdImpression(revenue = 1.0, source = "rewarded", adNetwork = "admob")
                 }
@@ -93,7 +93,7 @@ class RewardedAdsConfig(
                 }
 
                 override fun onUserEarnedReward() {
-                    activity.trackMmpPurchase(revenue = 9.99, productId = "reward_${adType.value}")
+                    trackMmpPurchase(revenue = 9.99, productId = "reward_${adType.value}")
                     RevenueTracker.trackPurchase(revenue = 9.99, productId = "reward_${adType.value}", quantity = 1)
                     listener?.onUserEarnedReward()
                 }

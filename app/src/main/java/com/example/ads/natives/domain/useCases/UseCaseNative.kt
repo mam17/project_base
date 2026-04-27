@@ -10,6 +10,7 @@ import com.example.ads.utilities.Constants.TAG_ADS
 import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
 import com.example.ads.utilities.InternetManager
+import com.example.ads.utilities.RevenueTracker
 
 
 
@@ -64,6 +65,7 @@ class UseCaseNative(
                 if (result != null) {
                     primarySucceeded = true
                     loadingKeys.remove(nativeAdKey.value)
+                    RevenueTracker.trackAdImpression(revenue = 0.35, source = "native", adNetwork = "admob")
                     callback.invoke(result)
                 } else {
                     if (!primarySucceeded) {
@@ -75,6 +77,9 @@ class UseCaseNative(
                                 adId = fallbackId
                             ) {
                                 loadingKeys.remove(nativeAdKey.value)
+                                if (it != null) {
+                                    RevenueTracker.trackAdImpression(revenue = 0.35, source = "native_fallback", adNetwork = "admob")
+                                }
                                 callback.invoke(it)
                             }
                         } else {

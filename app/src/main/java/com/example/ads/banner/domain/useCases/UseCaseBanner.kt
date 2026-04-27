@@ -11,6 +11,7 @@ import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.myapplication.BuildConfig
 import com.google.android.gms.ads.AdView
 import com.example.ads.utilities.InternetManager
+import com.example.ads.utilities.RevenueTracker
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -66,6 +67,7 @@ class UseCaseBanner(
                 if (result != null) {
                     primarySucceeded = true
                     isAdLoading.set(false)
+                    RevenueTracker.trackAdImpression(revenue = 0.25, source = "banner", adNetwork = "admob")
                     callback.invoke(result)
                 } else {
                     if (!primarySucceeded) {
@@ -79,6 +81,9 @@ class UseCaseBanner(
                                 adView = adView
                             ) {
                                 isAdLoading.set(false)
+                                if (it != null) {
+                                    RevenueTracker.trackAdImpression(revenue = 0.25, source = "banner_fallback", adNetwork = "admob")
+                                }
                                 callback.invoke(it)
                             }
                         } else {
