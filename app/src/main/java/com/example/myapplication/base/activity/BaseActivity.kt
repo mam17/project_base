@@ -38,12 +38,10 @@ import com.example.myapplication.ui.main.MainActivity
 import com.example.myapplication.ui.dialog.DialogLoading
 import com.example.myapplication.utils.SpManager
 import com.example.myapplication.utils.SystemUtil
-import dagger.hilt.android.AndroidEntryPoint
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import javax.inject.Inject
 import kotlin.getValue
 
-@AndroidEntryPoint
 abstract class BaseActivity<VB : ViewBinding>(
     private val bindingInflater: (LayoutInflater) -> VB
 ) : AppCompatActivity() {
