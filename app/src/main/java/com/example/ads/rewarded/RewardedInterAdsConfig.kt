@@ -11,6 +11,9 @@ import com.example.ads.utilities.SharedPreferenceUtils
 import com.example.ads.utilities.InternetManager
 import com.example.ads.utilities.LoadingDialogHelper
 import com.example.ads.ui.dialog.DialogLoadingAds
+import com.example.ads.utilities.extensions.trackMmpAdRevenue
+import com.example.ads.utilities.extensions.trackMmpPurchase
+import com.example.ads.utilities.RevenueTracker
 
 
 
@@ -45,7 +48,17 @@ class RewardedInterAdsConfig(
             null
         }
 
-        val wrappedListener = LoadingDialogHelper.wrapRewardedCallback(loadingDialog, listener)
+        val wrappedListener = LoadingDialogHelper.wrapRewardedCallback(loadingDialog, object : RewardedOnLoadCallBack {
+            override fun onResponse(isSuccess: Boolean) {
+                if (isSuccess) {
+                    if (activity != null) {
+                        activity.trackMmpAdRevenue(revenue = 1.5, adNetwork = "admob")
+                    }
+                    RevenueTracker.trackAdImpression(revenue = 1.5, source = "rewarded_inter", adNetwork = "admob")
+                }
+                listener?.onResponse(isSuccess)
+            }
+        })
 
         loadRewardedInter(
             context = context,
@@ -63,11 +76,39 @@ class RewardedInterAdsConfig(
         adType: RewardedInterAdKey,
         listener: RewardedOnShowCallBack? = null
     ) {
+        val wrappedListener = if (activity != null) {
+            object : RewardedOnShowCallBack {
+                override fun onAdDismissed() {
+                    listener?.onAdDismissed()
+                }
+
+                override fun onAdFailedToShow() {
+                    listener?.onAdFailedToShow()
+                }
+
+                override fun onAdShowed() {
+                    listener?.onAdShowed()
+                }
+
+                override fun onAdClicked() {
+                    listener?.onAdClicked()
+                }
+
+                override fun onRewardEarned() {
+                    activity.trackMmpPurchase(revenue = 14.99, productId = "reward_inter_${adType.value}")
+                    RevenueTracker.trackPurchase(revenue = 14.99, productId = "reward_inter_${adType.value}", quantity = 1)
+                    listener?.onRewardEarned()
+                }
+            }
+        } else {
+            listener
+        }
+
         showRewardedInter(
             activity = activity,
             adType = adType.value,
             isAppPurchased = sharedPreferenceUtils.isAppPurchased,
-            listener
+            wrappedListener
         )
     }
 }

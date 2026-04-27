@@ -12,7 +12,6 @@ import com.example.ads.rewarded.enums.RewardedAdKey
 import com.example.ads.utilities.extensions.addCleanView
 import com.example.ads.utilities.extensions.logButtonClick
 import com.example.ads.utilities.extensions.logScreenView
-import com.example.ads.utilities.extensions.trackMmpPurchase
 import com.example.myapplication.R
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityMainBinding
@@ -45,7 +44,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
         binding.btnShowInter.setOnClickListener {
             logButtonClick("show_interstitial")
-            trackMmpAdRevenue(revenue = 0.5, adNetwork = "admob")
 
             val action = { startNextActivity(LanguageActivity::class.java) }
             diComponent.interstitialAdsConfig.loadInterstitialAd(
@@ -78,9 +76,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                         if (isSuccess) {
                             showRewardedAd(
                                 RewardedAdKey.AI_FEATURE,
-                                onRewarded = {
-                                    trackMmpPurchase(revenue = 9.99, productId = "ai_feature_pack")
-                                },
+                                onRewarded = { },
                                 onDismiss = { startNextActivity(LanguageActivity::class.java) }
                             )
                         }

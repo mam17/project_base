@@ -29,11 +29,13 @@ object RevenueTracker {
      * @param revenue Revenue amount in USD
      * @param currency Currency code (default: USD)
      * @param source Source of revenue (e.g., "interstitial", "rewarded", "banner")
+     * @param adNetwork Ad network name (e.g., "admob")
      */
     fun trackAdImpression(
         revenue: Double,
         currency: String = "USD",
-        source: String = "ads"
+        source: String = "ads",
+        adNetwork: String = "admob"
     ) {
         trackRevenue(
             revenue = revenue,
@@ -41,7 +43,8 @@ object RevenueTracker {
             eventName = "AdImpression",
             customData = mapOf(
                 "source" to source,
-                "type" to "ad_impression"
+                "type" to "ad_impression",
+                "ad_network" to adNetwork
             )
         )
     }

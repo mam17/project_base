@@ -14,6 +14,8 @@ import com.example.myapplication.BuildConfig
 import com.example.ads.utilities.InternetManager
 import com.example.ads.utilities.LoadingDialogHelper
 import com.example.ads.ui.dialog.DialogLoadingAds
+import com.example.ads.utilities.extensions.trackMmpAdRevenue
+import com.example.ads.utilities.RevenueTracker
 
 
 class InterstitialAdsConfig(
@@ -42,7 +44,17 @@ class InterstitialAdsConfig(
             null
         }
 
-        val wrappedListener = LoadingDialogHelper.wrapInterstitialCallback(loadingDialog, listener)
+        val wrappedListener = LoadingDialogHelper.wrapInterstitialCallback(loadingDialog, object : InterstitialOnLoadCallBack {
+            override fun onResponse(successfullyLoaded: Boolean) {
+                if (successfullyLoaded) {
+                    if (activity != null) {
+                        activity.trackMmpAdRevenue(revenue = 0.5, adNetwork = "admob")
+                    }
+                    RevenueTracker.trackAdImpression(revenue = 0.5, source = "interstitial", adNetwork = "admob")
+                }
+                listener?.onResponse(successfullyLoaded)
+            }
+        })
 
         when (adType) {
             InterAdKey.INTER_HOME -> {

@@ -12,7 +12,12 @@
       "Bash(git commit -m 'fix: remove onAdClicked override from toRewardedShowCallback *)",
       "Bash(./gradlew clean *)",
       "Bash(timeout 120 ./gradlew build --info)",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "Bash(gradlew.bat assembleDebug)",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(timeout 120 ./gradlew assembleDebug --info)",
+      "Read(//tmp/**)",
+      "Bash(./gradlew --version)"
     ]
   }
 }
