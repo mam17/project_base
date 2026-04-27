@@ -66,8 +66,9 @@ class UseCaseNative(
                 if (result != null) {
                     primarySucceeded = true
                     loadingKeys.remove(nativeAdKey.value)
-                    MMPTracker.trackAdRevenue(revenue = 0.35, adNetwork = "admob")
-                    RevenueTracker.trackAdImpression(revenue = 0.35, source = "native", adNetwork = "admob")
+                    // TODO: Replace with actual revenue from OnPaidEventListener (AdMob's AdValue.valueMicros / 1_000_000.0)
+                    MMPTracker.trackAdRevenue(revenue = 0.0, adNetwork = "admob")
+                    RevenueTracker.trackAdImpression(revenue = 0.0, source = "native", adNetwork = "admob")
                     callback.invoke(result)
                 } else {
                     if (!primarySucceeded) {
@@ -80,8 +81,9 @@ class UseCaseNative(
                             ) {
                                 loadingKeys.remove(nativeAdKey.value)
                                 if (it != null) {
-                                    MMPTracker.trackAdRevenue(revenue = 0.35, adNetwork = "admob")
-                                    RevenueTracker.trackAdImpression(revenue = 0.35, source = "native_fallback", adNetwork = "admob")
+                                    // TODO: Replace with actual revenue from OnPaidEventListener
+                                    MMPTracker.trackAdRevenue(revenue = 0.0, adNetwork = "admob")
+                                    RevenueTracker.trackAdImpression(revenue = 0.0, source = "native_fallback", adNetwork = "admob")
                                 }
                                 callback.invoke(it)
                             }

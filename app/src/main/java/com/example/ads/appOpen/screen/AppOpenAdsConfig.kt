@@ -33,8 +33,9 @@ class AppOpenAdsConfig(
         val wrappedListener = object : AppOpenOnLoadCallBack {
             override fun onResponse(successfullyLoaded: Boolean, errorMessage: String?) {
                 if (successfullyLoaded) {
-                    MMPTracker.trackAdRevenue(revenue = 0.3, adNetwork = "admob")
-                    RevenueTracker.trackAdImpression(revenue = 0.3, source = "app_open", adNetwork = "admob")
+                    // TODO: Replace with actual revenue from OnPaidEventListener (AdMob's AdValue.valueMicros / 1_000_000.0)
+                    MMPTracker.trackAdRevenue(revenue = 0.0, adNetwork = "admob")
+                    RevenueTracker.trackAdImpression(revenue = 0.0, source = "app_open", adNetwork = "admob")
                 }
                 listener?.onResponse(successfullyLoaded)
             }

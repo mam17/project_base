@@ -51,10 +51,11 @@ class RewardedInterAdsConfig(
         val wrappedListener = LoadingDialogHelper.wrapRewardedCallback(loadingDialog, object : RewardedOnLoadCallBack {
             override fun onResponse(isSuccess: Boolean) {
                 if (isSuccess) {
+                    // TODO: Replace with actual revenue from OnPaidEventListener (AdMob's AdValue.valueMicros / 1_000_000.0)
                     if (activity != null) {
-                        trackMmpAdRevenue(revenue = 1.5, adNetwork = "admob")
+                        trackMmpAdRevenue(revenue = 0.0, adNetwork = "admob")
                     }
-                    RevenueTracker.trackAdImpression(revenue = 1.5, source = "rewarded_inter", adNetwork = "admob")
+                    RevenueTracker.trackAdImpression(revenue = 0.0, source = "rewarded_inter", adNetwork = "admob")
                 }
                 listener?.onResponse(isSuccess)
             }
@@ -95,8 +96,9 @@ class RewardedInterAdsConfig(
                 }
 
                 override fun onUserEarnedReward() {
-                    trackMmpPurchase(revenue = 14.99, productId = "reward_inter_${adType.value}")
-                    RevenueTracker.trackPurchase(revenue = 14.99, productId = "reward_inter_${adType.value}", quantity = 1)
+                    // TODO: Replace with actual reward value (set based on your business logic, e.g., in-app currency value)
+                    trackMmpPurchase(revenue = 0.0, productId = "reward_inter_${adType.value}")
+                    RevenueTracker.trackPurchase(revenue = 0.0, productId = "reward_inter_${adType.value}", quantity = 1)
                     listener?.onUserEarnedReward()
                 }
             }

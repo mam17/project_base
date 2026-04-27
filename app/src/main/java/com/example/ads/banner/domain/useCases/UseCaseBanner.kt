@@ -68,8 +68,9 @@ class UseCaseBanner(
                 if (result != null) {
                     primarySucceeded = true
                     isAdLoading.set(false)
-                    MMPTracker.trackAdRevenue(revenue = 0.25, adNetwork = "admob")
-                    RevenueTracker.trackAdImpression(revenue = 0.25, source = "banner", adNetwork = "admob")
+                    // TODO: Replace with actual revenue from OnPaidEventListener (AdMob's AdValue.valueMicros / 1_000_000.0)
+                    MMPTracker.trackAdRevenue(revenue = 0.0, adNetwork = "admob")
+                    RevenueTracker.trackAdImpression(revenue = 0.0, source = "banner", adNetwork = "admob")
                     callback.invoke(result)
                 } else {
                     if (!primarySucceeded) {
@@ -84,8 +85,9 @@ class UseCaseBanner(
                             ) {
                                 isAdLoading.set(false)
                                 if (it != null) {
-                                    MMPTracker.trackAdRevenue(revenue = 0.25, adNetwork = "admob")
-                                    RevenueTracker.trackAdImpression(revenue = 0.25, source = "banner_fallback", adNetwork = "admob")
+                                    // TODO: Replace with actual revenue from OnPaidEventListener
+                                    MMPTracker.trackAdRevenue(revenue = 0.0, adNetwork = "admob")
+                                    RevenueTracker.trackAdImpression(revenue = 0.0, source = "banner_fallback", adNetwork = "admob")
                                 }
                                 callback.invoke(it)
                             }

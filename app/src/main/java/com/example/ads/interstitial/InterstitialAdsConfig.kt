@@ -47,10 +47,11 @@ class InterstitialAdsConfig(
         val wrappedListener = LoadingDialogHelper.wrapInterstitialCallback(loadingDialog, object : InterstitialOnLoadCallBack {
             override fun onResponse(successfullyLoaded: Boolean) {
                 if (successfullyLoaded) {
+                    // TODO: Replace with actual revenue from OnPaidEventListener (AdMob's AdValue.valueMicros / 1_000_000.0)
                     if (activity != null) {
-                       trackMmpAdRevenue(revenue = 0.5, adNetwork = "admob")
+                       trackMmpAdRevenue(revenue = 0.0, adNetwork = "admob")
                     }
-                    RevenueTracker.trackAdImpression(revenue = 0.5, source = "interstitial", adNetwork = "admob")
+                    RevenueTracker.trackAdImpression(revenue = 0.0, source = "interstitial", adNetwork = "admob")
                 }
                 listener?.onResponse(successfullyLoaded)
             }
