@@ -1,10 +1,9 @@
 package com.example.ads.utilities
 
 import android.content.Context
+import android.os.Bundle
 import android.util.Log
 import com.facebook.appevents.AppEventsLogger
-import java.math.BigDecimal
-import java.util.Currency
 
 /**
  * Utility class to track revenue events for Facebook SDK.
@@ -143,9 +142,19 @@ object RevenueTracker {
     ) {
         try {
             val logger = facebookLogger ?: return
-            val parameters = customData.toMutableMap().apply {
-                put("_valueToSum", revenue)
-                put("_currency", currency)
+            val parameters = Bundle().apply {
+                putDouble("_valueToSum", revenue)
+                putString("_currency", currency)
+                customData.forEach { (key, value) ->
+                    when (value) {
+                        is String -> putString(key, value)
+                        is Double -> putDouble(key, value)
+                        is Int -> putInt(key, value)
+                        is Long -> putLong(key, value)
+                        is Boolean -> putBoolean(key, value)
+                        else -> putString(key, value.toString())
+                    }
+                }
             }
 
             val facebookEventName = when (eventName) {
@@ -155,7 +164,7 @@ object RevenueTracker {
                 else -> eventName
             }
 
-            logger.logEvent(facebookEventName, BigDecimal(revenue), Currency.getInstance(currency), parameters)
+            logger.logEvent(facebookEventName, revenue, parameters)
             Log.d(TAG, "Tracked to Facebook: $facebookEventName - $$revenue $currency")
         } catch (e: Exception) {
             Log.e(TAG, "Error tracking to Facebook: $eventName", e)
