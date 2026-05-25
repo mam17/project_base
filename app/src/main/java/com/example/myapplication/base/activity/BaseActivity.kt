@@ -20,7 +20,6 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.viewbinding.ViewBinding
 import com.example.myapplication.R
-import com.example.myapplication.ui.main.MainActivity
 import com.example.myapplication.ui.dialog.DialogLoading
 import com.example.myapplication.utils.SpManager
 import com.example.myapplication.utils.SystemUtil
@@ -32,6 +31,7 @@ abstract class BaseActivity<VB : ViewBinding>(
 
     private var _binding: VB? = null
     protected val binding get() = _binding!!
+
     @Inject
     lateinit var spManager: SpManager
 
@@ -62,6 +62,7 @@ abstract class BaseActivity<VB : ViewBinding>(
             }
         })
     }
+
     /**
      * Mặc định: Hiển thị tràn viền, trong suốt thanh trạng thái và điều hướng.
      * Content sẽ nằm bên dưới thanh hệ thống (không bị che).
@@ -79,7 +80,8 @@ abstract class BaseActivity<VB : ViewBinding>(
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.systemBars())
-        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 
     /**
@@ -89,7 +91,8 @@ abstract class BaseActivity<VB : ViewBinding>(
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.navigationBars())
-        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 
     /**
@@ -135,10 +138,11 @@ abstract class BaseActivity<VB : ViewBinding>(
         startActivity(intent)
         finish()
     }
+
     /**
      * Chuyển màn hình với hiệu ứng slide và truyền dữ liệu (Bundle).
      */
-    protected fun <T : Activity> startNextActivity(
+    fun <T : Activity> startNextActivity(
         clazz: Class<T>,
         bundle: Bundle? = null,
         isFinish: Boolean = false
