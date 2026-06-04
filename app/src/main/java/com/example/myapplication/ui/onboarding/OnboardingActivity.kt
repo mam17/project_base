@@ -6,7 +6,6 @@ import com.example.myapplication.R
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityOnboardingBinding
 import com.example.myapplication.ui.main.MainActivity
-import com.example.myapplication.utils.SpManager
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -37,7 +36,6 @@ class OnboardingActivity :
                 if (currentPosition < mAdapter.itemCount - 1) {
                     vpOnBoarding.currentItem = currentPosition + 1
                 } else {
-                    spManager.isCompletedOnboarding = true
                     startActivityNewTask(MainActivity::class.java)
                 }
             }

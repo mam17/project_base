@@ -86,6 +86,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.process)
+    implementation(libs.androidx.lifecycle.extensions)
+
+    // Work
+    implementation(libs.androidx.work.runtime.ktx)
 
     // RxJava
     implementation(libs.rxjava)
