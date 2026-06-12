@@ -133,11 +133,7 @@ class RoundImageView @JvmOverloads constructor(
             }
         }
 
-        return if (hasOnClickListeners()) {
-            super.onTouchEvent(event)
-        } else {
-            false
-        }
+        return super.onTouchEvent(event)
     }
 
     private fun startScaleAnim(scale: Float) {
