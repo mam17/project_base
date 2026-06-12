@@ -1,11 +1,18 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.text.SimpleDateFormat
+import java.util.Date
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    id("org.jetbrains.kotlin.plugin.parcelize")
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
+}
+
+configurations.all {
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-android-extensions-runtime")
 }
 
 android {
@@ -62,7 +69,12 @@ android {
         viewBinding = true
     }
 }
-
+val formattedDate: String? = SimpleDateFormat("MM.dd.yyyy").format(Date())
+base {
+    archivesName.set(
+        "SMS_WA_v${android.defaultConfig.versionName}(${android.defaultConfig.versionCode})_${formattedDate}"
+    )
+}
 dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.core.ktx)
@@ -119,7 +131,7 @@ dependencies {
     // Dot
     implementation(libs.dotsindicator)
 
-    //Lottie load gif
+    // Lottie load gif
     implementation(libs.lottie)
 
     // Rating
@@ -134,4 +146,6 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.config)
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.firestore)
 }

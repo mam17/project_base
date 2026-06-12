@@ -105,10 +105,10 @@ abstract class BaseActivity<VB : ViewBinding>(
     /**
      * Làm trong suốt thanh trạng thái để thấy được màu nền của app.
      */
-    protected fun setBaseStatusBarTransparent() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
-    }
+//    protected fun setBaseStatusBarTransparent() {
+//        WindowCompat.setDecorFitsSystemWindows(window, false)
+//        window.statusBarColor = android.graphics.Color.TRANSPARENT
+//    }
 
     /**
      * Tùy chỉnh thanh trạng thái: Ẩn/Hiện và đổi màu icon.
