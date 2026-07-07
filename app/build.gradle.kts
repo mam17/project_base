@@ -130,7 +130,6 @@ dependencies {
 
     // Dagger Hilt
     implementation(libs.hilt.android)
-    implementation(libs.androidx.lifecycle.process)
     ksp(libs.hilt.compiler)
 
     // Room
@@ -195,7 +194,7 @@ dependencies {
     implementation(libs.firebase.firestore)
 
     //AdMob
-    implementation("com.google.android.gms:play-services-ads:25.2.0")
+    implementation("com.google.android.gms:play-services-ads:25.4.0")
 
     //UMP
     implementation("com.google.android.ump:user-messaging-platform:4.0.0")

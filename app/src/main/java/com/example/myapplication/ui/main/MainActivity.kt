@@ -42,7 +42,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         NotificationUtils.cancelOnboardingReminder(this)
         spManager.isCompletedOnboarding = true
 
-        setBaseFullScreen()
         binding.layoutFullScreenCount.root.gone()
         loadBanner()
 

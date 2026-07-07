@@ -1,7 +1,6 @@
 package com.example.myapplication.ui.splash
 
 import android.annotation.SuppressLint
-import android.os.Bundle
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -12,7 +11,6 @@ import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivitySplashBinding
 import com.example.myapplication.ui.language.LanguageActivity
 import com.example.myapplication.ui.main.MainActivity
-import com.example.myapplication.utils.Constant
 import com.example.myapplication.ui.uninstall.UninstallActivity
 import com.example.myapplication.utils.Constant
 import com.example.myapplication.utils.DialogEx.showDialogAlert
@@ -56,10 +54,6 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
         } else {
             PermissionUtils.requestNotificationPermission(this, notificationPermissionLauncher)
         }
-    }
-
-    override fun initData() {
-
     }
 
     private fun checkVersion() {

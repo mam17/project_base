@@ -91,7 +91,6 @@
         <receiver
             android:name=".receiver.OnboardingReminderReceiver"
             android:exported="false" />
-            android:exported="false" />
 
         <meta-data
             android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"

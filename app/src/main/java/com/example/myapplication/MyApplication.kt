@@ -37,7 +37,7 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
     }
 
     override fun onCreate() {
-        super.onCreate()
+        super<Application>.onCreate()
         initKoin()
         initializeTracking()
     }
