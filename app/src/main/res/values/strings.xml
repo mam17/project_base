@@ -11,6 +11,7 @@
     <string name="txt_russian" translatable="false">Russian</string>
     <string name="txt_indonesian" translatable="false">Indonesian</string>
     <string name="txt_french" translatable="false">French</string>
+    <string name="txt_vietnamese" translatable="false">Vietnamese</string>
 
 
     <string name="txt_select">Select</string>

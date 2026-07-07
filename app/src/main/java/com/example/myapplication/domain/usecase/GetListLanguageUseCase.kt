@@ -17,6 +17,7 @@ class GetListLanguageUseCase @Inject constructor() :
         LanguageModel("ru", R.drawable.ic_lang_ru, R.string.txt_russian),
         LanguageModel("fr", R.drawable.ic_lang_fr, R.string.txt_french),
         LanguageModel("en", R.drawable.ic_lang_en, R.string.txt_english),
-        LanguageModel("in", R.drawable.ic_lang_in, R.string.txt_english),
+        LanguageModel("in", R.drawable.ic_lang_in, R.string.txt_indonesian),
+        LanguageModel("vi", R.drawable.ic_lang_vi, R.string.txt_vietnamese),
     )
 }
