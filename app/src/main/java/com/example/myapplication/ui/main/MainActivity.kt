@@ -15,8 +15,14 @@ import com.example.ads.utilities.extensions.logScreenView
 import com.example.myapplication.R
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityMainBinding
+import com.example.myapplication.ui.alertfull.NotificationFSUtil
+import com.example.myapplication.ui.alertfull.NotificationFSUtil.scheduleFullScreenNotificationDiary
+import com.example.myapplication.ui.alertfull.PermissionFragment
 import com.example.myapplication.ui.language.LanguageActivity
 import com.example.myapplication.utils.DialogEx.showDialogAlert
+import com.example.myapplication.utils.PermissionUtils
+import com.example.myapplication.utils.notification.NotificationUtils
+
 import com.example.myapplication.utils.ViewEx.gone
 import com.example.myapplication.utils.ViewEx.visible
 import com.google.android.gms.ads.AdView
@@ -32,6 +38,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private var countdownTimer: CountDownTimer? = null
 
     override fun initView() {
+        NotificationFSUtil.createNotificationChannel(this)
+        NotificationUtils.cancelOnboardingReminder(this)
+        spManager.isCompletedOnboarding = true
+
         setBaseFullScreen()
         binding.layoutFullScreenCount.root.gone()
         loadBanner()
@@ -151,5 +161,33 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             okOnClick = {},
             cancelOnClick = { super.onBack() }
         )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        ensureFeaturePermissions()
+    }
+
+    fun ensureFeaturePermissions(): Boolean {
+        if (!PermissionUtils.hasAllPermissions(this)) {
+            val fm = supportFragmentManager
+            val existing = fm.findFragmentByTag(PERMISSION_FRAGMENT_TAG) as? PermissionFragment
+
+            if (existing == null || !existing.isAdded) {
+                val fragment = PermissionFragment()
+                fragment.show(fm, PERMISSION_FRAGMENT_TAG)
+            }
+            return false
+        } else {
+            (supportFragmentManager.findFragmentByTag(PERMISSION_FRAGMENT_TAG) as? PermissionFragment)
+                ?.dismissAllowingStateLoss()
+
+            scheduleFullScreenNotificationDiary(this)
+            return true
+        }
+    }
+
+    companion object {
+        private const val PERMISSION_FRAGMENT_TAG = "PermissionFragment"
     }
 }

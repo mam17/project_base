@@ -1,11 +1,18 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.text.SimpleDateFormat
+import java.util.Date
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    id("org.jetbrains.kotlin.plugin.parcelize")
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
+}
+
+configurations.all {
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-android-extensions-runtime")
 }
 
 android {
@@ -22,15 +29,24 @@ android {
         //noinspection OldTargetApi
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        manifestPlaceholders["ad_app_id"] = "ca-app-pub-3940256099942544~3347511713"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("key/key_app_base")
+            storePassword = "123456"
+            keyAlias = "key0"
+            keyPassword = "123456"
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -87,17 +103,25 @@ android {
     }
     //noinspection WrongGradleMethod
     kotlin {
+        jvmToolchain(17)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
     buildFeatures {
+        buildConfig = true
         viewBinding = true
         buildConfig = true
     }
 }
-
+val formattedDate: String? = SimpleDateFormat("MM.dd.yyyy").format(Date())
+base {
+    archivesName.set(
+        "SMS_WA_v${android.defaultConfig.versionName}(${android.defaultConfig.versionCode})_${formattedDate}"
+    )
+}
 dependencies {
+    implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -116,10 +140,14 @@ dependencies {
     ksp(libs.room.compiler)
 
     // Lifecycle
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.process)
+    implementation(libs.androidx.lifecycle.extensions)
+
+    // Work
+    implementation(libs.androidx.work.runtime.ktx)
 
     // RxJava
     implementation(libs.rxjava)
@@ -142,19 +170,29 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    //shimmer
+    // Shimmer
     implementation(libs.shimmer)
 
-    //Dot
+    // Dot
     implementation(libs.dotsindicator)
 
-    //Firebase
-    implementation("com.google.firebase:firebase-config-ktx:22.1.2")
-    implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
-    implementation("com.google.firebase:firebase-crashlytics-ktx")
-    implementation("com.google.firebase:firebase-analytics-ktx")
-    implementation("com.google.firebase:firebase-appcheck-playintegrity")
-    implementation("com.google.firebase:firebase-appcheck-debug")
+    // Lottie load gif
+    implementation(libs.lottie)
+
+    // Rating
+    implementation(libs.andratingbar)
+
+    // Retrofit + OkHttp
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp.logging)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.config)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.firestore)
 
     //AdMob
     implementation("com.google.android.gms:play-services-ads:25.2.0")

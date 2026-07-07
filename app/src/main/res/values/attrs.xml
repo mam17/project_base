@@ -6,5 +6,8 @@
         <attr name="bgColor" format="color" />
         <attr name="enableScaleAnim" format="boolean" />
         <attr name="iconTint" format="color" />
+        <attr name="strokeEnable" format="boolean" />
+        <attr name="strokeColor" format="color" />
+        <attr name="strokeWidth" format="dimension" />
     </declare-styleable>
 </resources>

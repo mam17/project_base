@@ -24,7 +24,11 @@ class RoundImageView @JvmOverloads constructor(
     private var cornerRadius: Float = 0f
     private var isOval: Boolean = false
     private var bgColor: Int = Color.TRANSPARENT
+    private var strokeEnable: Boolean = false
+    private var strokeColor: Int = Color.TRANSPARENT
+    private var strokeWidth: Float = 0f
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val path = Path()
     private val rectF = RectF()
 
@@ -38,6 +42,9 @@ class RoundImageView @JvmOverloads constructor(
                 isOval = getBoolean(R.styleable.RoundImageView_isOval, false)
                 bgColor = getColor(R.styleable.RoundImageView_bgColor, Color.TRANSPARENT)
                 enableScaleAnim = getBoolean(R.styleable.RoundImageView_enableScaleAnim, true)
+                strokeEnable = getBoolean(R.styleable.RoundImageView_strokeEnable, false)
+                strokeColor = getColor(R.styleable.RoundImageView_strokeColor, Color.TRANSPARENT)
+                strokeWidth = getDimension(R.styleable.RoundImageView_strokeWidth, 0f)
 
                 if (hasValue(R.styleable.RoundImageView_iconTint)) {
                     val tintColor = getColor(R.styleable.RoundImageView_iconTint, Color.TRANSPARENT)
@@ -84,6 +91,13 @@ class RoundImageView @JvmOverloads constructor(
         invalidate()
     }
 
+    fun setStroke(enable: Boolean, color: Int, width: Float) {
+        this.strokeEnable = enable
+        this.strokeColor = color
+        this.strokeWidth = width
+        invalidate()
+    }
+
     fun setEnableScaleAnim(enable: Boolean) {
         this.enableScaleAnim = enable
     }
@@ -102,6 +116,12 @@ class RoundImageView @JvmOverloads constructor(
             }
         }
         super.onDraw(canvas)
+        if (strokeEnable && strokeWidth > 0f && strokeColor != Color.TRANSPARENT) {
+            strokePaint.style = Paint.Style.STROKE
+            strokePaint.color = strokeColor
+            strokePaint.strokeWidth = strokeWidth
+            canvas.drawPath(path, strokePaint)
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -112,6 +132,7 @@ class RoundImageView @JvmOverloads constructor(
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> startScaleAnim(1f)
             }
         }
+
         return super.onTouchEvent(event)
     }
 

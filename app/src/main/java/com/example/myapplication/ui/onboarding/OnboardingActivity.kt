@@ -62,6 +62,7 @@ class OnboardingActivity :
 //                    spManager.isCompletedOnboarding = true
 //                    startActivityNewTask(MainActivity::class.java)
                     startNextActivity(FeatureActivity::class.java, isFinish = true)
+                    startActivityNewTask(MainActivity::class.java)
                 }
             }
         }

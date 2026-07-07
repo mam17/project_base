@@ -22,8 +22,6 @@ abstract class BaseBottomFragment<VB : ViewBinding> : BottomSheetDialogFragment(
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Mặc định cho phép rounded corner nếu bạn định nghĩa style trong themes.xml
-        // setStyle(STYLE_NORMAL, R.style.CustomBottomSheetDialogTheme)
     }
 
     override fun onCreateView(
@@ -75,11 +73,23 @@ abstract class BaseBottomFragment<VB : ViewBinding> : BottomSheetDialogFragment(
 
     /** ========== Forward các hàm hỗ trợ từ BaseActivity ========== */
 
-    fun addFragment(id: Int, fragment: Fragment, backStack: String? = null, tag: String? = null, delay: Long = 0) {
+    fun addFragment(
+        id: Int,
+        fragment: Fragment,
+        backStack: String? = null,
+        tag: String? = null,
+        delay: Long = 0
+    ) {
         (activity as? BaseActivity<*>)?.addFragment(id, fragment, backStack, tag, delay)
     }
 
-    fun replaceFragment(id: Int, fragment: Fragment, backStack: String? = null, tag: String? = null, delay: Long = 0) {
+    fun replaceFragment(
+        id: Int,
+        fragment: Fragment,
+        backStack: String? = null,
+        tag: String? = null,
+        delay: Long = 0
+    ) {
         (activity as? BaseActivity<*>)?.replaceFragment(id, fragment, backStack, tag, delay)
     }
 
@@ -105,6 +115,14 @@ abstract class BaseBottomFragment<VB : ViewBinding> : BottomSheetDialogFragment(
 
     protected fun <T : android.app.Activity> startActivityNewTask(clazz: Class<T>) {
         (activity as? BaseActivity<*>)?.startActivityNewTask(clazz)
+    }
+
+    protected fun <T : android.app.Activity> startNextActivity(
+        clazz: Class<T>,
+        bundle: Bundle? = null,
+        isFinish: Boolean = false
+    ) {
+        (activity as? BaseActivity<*>)?.startNextActivity(clazz, bundle, isFinish)
     }
 
     /** ========== Abstract / override ========== */

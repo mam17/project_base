@@ -42,7 +42,13 @@ abstract class BaseFragment<VB : ViewBinding>(
         tag: String? = null,
         delay: Long = 0
     ) {
-        (activity as? BaseActivity<*>)?.replaceFragment(containerId, fragment, backStack, tag, delay)
+        (activity as? BaseActivity<*>)?.replaceFragment(
+            containerId,
+            fragment,
+            backStack,
+            tag,
+            delay
+        )
     }
 
     protected fun addFragment(
@@ -77,6 +83,14 @@ abstract class BaseFragment<VB : ViewBinding>(
 
     protected fun <T : android.app.Activity> startActivityNewTask(clazz: Class<T>) {
         (activity as? BaseActivity<*>)?.startActivityNewTask(clazz)
+    }
+
+    protected fun <T : android.app.Activity> startNextActivity(
+        clazz: Class<T>,
+        bundle: Bundle? = null,
+        isFinish: Boolean = false
+    ) {
+        (activity as? BaseActivity<*>)?.startNextActivity(clazz, bundle, isFinish)
     }
 
     override fun onDestroyView() {

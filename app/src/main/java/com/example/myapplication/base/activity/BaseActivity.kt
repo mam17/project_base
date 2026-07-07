@@ -48,6 +48,8 @@ abstract class BaseActivity<VB : ViewBinding>(
 
     private var _binding: VB? = null
     protected val binding get() = _binding!!
+
+    @Inject
     lateinit var spManager: SpManager
 
     private var dialogLoading: DialogLoading? = null
@@ -62,10 +64,6 @@ abstract class BaseActivity<VB : ViewBinding>(
         _binding = bindingInflater(layoutInflater)
         setContentView(binding.root)
 
-        spManager = SpManager.get(this)
-        applySystemBarInsets()
-//        setBaseDefault()
-        setBaseStatusBar(isVisible = true, isLightIcons = true)
         setBaseHideNavigation()
 
         setupNativeAdObservers()
@@ -79,6 +77,7 @@ abstract class BaseActivity<VB : ViewBinding>(
             }
         })
     }
+
     protected val diComponent by lazy { DIComponent() }
     /**
      * Mặc định: Hiển thị tràn viền, trong suốt thanh trạng thái và điều hướng.
@@ -97,48 +96,80 @@ abstract class BaseActivity<VB : ViewBinding>(
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.systemBars())
-        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 
     /**
-     * Ẩn thanh điều hướng (Navigation Bar) phía dưới.
+     * Ẩn thanh trạng thái (Status Bar).
+     */
+    protected fun setBaseHideStatusBar() {
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.hide(WindowInsetsCompat.Type.statusBars())
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    }
+
+    /**
+     * Ẩn hoàn toàn thanh điều hướng (Navigation Bar) phía dưới.
      */
     protected fun setBaseHideNavigation() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.navigationBars())
-        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 
     /**
-     * Tùy chỉnh thanh trạng thái: Ẩn/Hiện và đổi màu icon (Sáng/Tối).
+     * Làm trong suốt thanh trạng thái để thấy được màu nền của app.
      */
-    protected fun setBaseStatusBar(isVisible: Boolean, isLightIcons: Boolean) {
+//    protected fun setBaseStatusBarTransparent() {
+//        WindowCompat.setDecorFitsSystemWindows(window, false)
+//        window.statusBarColor = android.graphics.Color.TRANSPARENT
+//    }
+
+    /**
+     * Tùy chỉnh thanh trạng thái: Ẩn/Hiện và đổi màu icon.
+     * @param isVisible Hiện/Ẩn status bar.
+     * @param isLightStatusBar True nếu nền sáng (icon tối), False nếu nền tối (icon sáng).
+     */
+    protected fun setBaseStatusBar(isVisible: Boolean, isLightStatusBar: Boolean) {
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         if (isVisible) {
             controller.show(WindowInsetsCompat.Type.statusBars())
         } else {
             controller.hide(WindowInsetsCompat.Type.statusBars())
         }
-        controller.isAppearanceLightStatusBars = isLightIcons
+        controller.isAppearanceLightStatusBars = isLightStatusBar
     }
 
     /**
-     * Chỉ đổi màu icon trên thanh trạng thái (Sáng/Tối).
+     * Chỉ đổi màu icon trên thanh trạng thái.
      */
-    protected fun setBaseStatusBarColor(isLightIcons: Boolean) {
+    protected fun setBaseStatusBarColor(isLightStatusBar: Boolean) {
         val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.isAppearanceLightStatusBars = isLightIcons
+        controller.isAppearanceLightStatusBars = isLightStatusBar
     }
 
     /**
      * Helper để tự động áp dụng padding để không bị che bởi thanh hệ thống.
-     * Thường dùng cho root view hoặc header.
+     * @param targetView View được áp dụng padding.
+     * @param isApplyTop Nếu false, nội dung sẽ hiển thị dưới status bar (phù hợp khi dùng background app).
      */
-    protected fun applySystemBarInsets(targetView: View = binding.root) {
+    protected fun applySystemBarInsets(
+        targetView: View = binding.root,
+        isApplyTop: Boolean = true,
+        isApplyBottom: Boolean = true
+    ) {
         ViewCompat.setOnApplyWindowInsetsListener(targetView) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(
+                systemBars.left,
+                if (isApplyTop) systemBars.top else 0,
+                systemBars.right,
+                if (isApplyBottom) systemBars.bottom else 0
+            )
             insets
         }
     }
@@ -153,10 +184,11 @@ abstract class BaseActivity<VB : ViewBinding>(
         startActivity(intent)
         finish()
     }
+
     /**
      * Chuyển màn hình với hiệu ứng slide và truyền dữ liệu (Bundle).
      */
-    protected fun <T : Activity> startNextActivity(
+    fun <T : Activity> startNextActivity(
         clazz: Class<T>,
         bundle: Bundle? = null,
         isFinish: Boolean = false
