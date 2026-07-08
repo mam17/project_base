@@ -6,6 +6,7 @@ import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.google.gson.Gson
 import com.example.myapplication.BuildConfig
 import com.example.myapplication.MyApplication
+import com.example.myapplication.base_ads.utils.AdConfig
 
 class FirebaseConfigManager private constructor() {
 
@@ -13,12 +14,11 @@ class FirebaseConfigManager private constructor() {
         private const val TAG = "FirebaseConfigManager"
         private const val MAX_RETRY = 5
 
-        const val KEY_REMOTE_API_BASE_URL = "url_api"
-        const val KEY_R2_BASE_URL = "r2_base_url"
-        const val KEY_TEMPLATE_COLLECTION = "template_collection"
-        const val DEFAULT_R2_BASE_URL = "https://pub-3343da4075314109b88b0f1e099064a5.r2.dev/"
-        private const val DEFAULT_TEMPLATE_COLLECTION = "app_catalog"
-        private const val KEY_ADS_CONFIG = "ad_config"
+        // Remote Config keys
+        const val KEY_ADS_CONFIG = "ad_config"
+        const val KEY_ENABLE_ALL_ADS = "enable_all_ads"
+        const val KEY_ENABLE_FORCE_UPDATE = "enable_force_update"
+        const val KEY_NEW_VERSION_NAME = "new_version_name"
 
         @Volatile
         private var INSTANCE: FirebaseConfigManager? = null
@@ -45,21 +45,31 @@ class FirebaseConfigManager private constructor() {
     private var retryCount = 0
     private var isFetching = false
     private val pendingFetchCallbacks = mutableListOf<(Boolean) -> Unit>()
+
+    // ========================= PUBLIC CONFIG VALUES =========================
+
+    /** Kill switch toàn bộ ads */
     var isEnableAllAds: Boolean = true
-//    var adConfig: AdConfig = AdConfig()
+        private set
+
+    /** Ad unit config (parsed from JSON) */
+    var adConfig: AdConfig = AdConfig()
+        private set
+
+    /** Force update flag */
+    var enableForceUpdate: Boolean = false
+        private set
+
+    /** New version name from Remote Config */
+    var newVersionName: String = ""
+        private set
+
+    // ========================= INIT =========================
 
     init {
         Log.i(TAG, "Initializing FirebaseConfigManager...")
         setup()
-//        val sp = MyApplication.instance?.spManager
-//        val json = sp?.getString(KEY_ADS_CONFIG, "") ?: ""
-//        if (json.isNotEmpty()) {
-//            try {
-//                adConfig = gson.fromJson(json, AdConfig::class.java)
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Parse error local ad_config: ${e.message}")
-//            }
-//        }
+        loadLocalAdConfig()
     }
 
     private fun setup() {
@@ -71,23 +81,29 @@ class FirebaseConfigManager private constructor() {
         Log.i(TAG, "Firebase RemoteConfig setup complete (DEBUG=${BuildConfig.DEBUG})")
     }
 
-    fun checkAndUpdateIfChanged(): Boolean {
-        val context = MyApplication.context ?: return false
+    /**
+     * Load ad_config từ local SharedPreferences (cache) để dùng ngay khi app mở,
+     * trước khi remote config fetch xong.
+     */
+    private fun loadLocalAdConfig() {
+        val context = MyApplication.context ?: return
+        try {
+            val sp = SpManager.get(context)
+            val json = sp.getString(KEY_ADS_CONFIG, "") ?: ""
+            if (json.isNotEmpty()) {
+                adConfig = gson.fromJson(json, AdConfig::class.java)
+                Log.d(TAG, "Loaded local ad_config cache")
+            }
 
-        if (!NetworkUtil.isNetworkAvailable(context)) {
-            Log.d(TAG, "No internet for RemoteConfig check")
-            return false
+            isEnableAllAds = sp.getBoolean(KEY_ENABLE_ALL_ADS, true)
+            enableForceUpdate = sp.getBoolean(KEY_ENABLE_FORCE_UPDATE, false)
+            newVersionName = sp.getString(KEY_NEW_VERSION_NAME, "") ?: ""
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading local config: ${e.message}")
         }
-
-        val config = remoteConfig ?: return false
-        val remoteUrl = config.getString(KEY_REMOTE_API_BASE_URL).trim()
-        if (!isValidUrl(remoteUrl)) {
-            Log.d(TAG, "Invalid api_url from RemoteConfig")
-            return false
-        }
-
-        return saveIfChanged(remoteUrl)
     }
+
+    // ========================= FETCH =========================
 
     fun fetch(onResult: ((Boolean) -> Unit)? = null) {
         Log.i(TAG, "fetch() called, isFetching=$isFetching")
@@ -122,14 +138,8 @@ class FirebaseConfigManager private constructor() {
                 return@addOnCompleteListener
             }
 
-            parseAndSaveAdConfig()
-
-            val remoteUrl = config.getString(KEY_REMOTE_API_BASE_URL).trim()
-            if (isValidUrl(remoteUrl)) {
-                saveIfChanged(remoteUrl)
-            } else {
-                Log.d(TAG, "RemoteConfig url_api is empty or invalid; continuing without API base url")
-            }
+            Log.i(TAG, "Fetch & activate SUCCESS")
+            parseAllRemoteValues()
 
             retryCount = 0
             notifyFetchResult(true)
@@ -148,21 +158,6 @@ class FirebaseConfigManager private constructor() {
         }
     }
 
-    private fun saveIfChanged(remoteUrl: String): Boolean {
-        val context = MyApplication.context ?: return false
-        val sp = SpManager.get(context)
-        val normalizedRemoteUrl = normalizeUrl(remoteUrl)
-        val localUrl = normalizeUrl(sp.getString(KEY_REMOTE_API_BASE_URL, "") ?: "")
-        if (normalizedRemoteUrl == localUrl) {
-            Log.i(TAG, "BASE_URL unchanged: $normalizedRemoteUrl")
-            return false
-        }
-
-        sp.putString(KEY_REMOTE_API_BASE_URL, normalizedRemoteUrl)
-        Log.i(TAG, "SUCCESS: Saved new BASE_URL = $normalizedRemoteUrl")
-        return true
-    }
-
     private fun notifyFetchResult(success: Boolean) {
         isFetching = false
         val callbacks = pendingFetchCallbacks.toList()
@@ -170,46 +165,79 @@ class FirebaseConfigManager private constructor() {
         callbacks.forEach { it(success) }
     }
 
-    fun getBaseUrl(): String {
-        val context = MyApplication.context ?: return ""
-        val url = SpManager.get(context)
-            .getString(KEY_REMOTE_API_BASE_URL, "")
-            ?.trim()
-            .orEmpty()
-        return normalizeUrl(url)
+    // ========================= PARSE REMOTE VALUES =========================
+
+    private fun parseAllRemoteValues() {
+        val context = MyApplication.context ?: return
+        val sp = SpManager.get(context)
+
+        // 1. enable_all_ads
+        parseEnableAllAds(sp)
+
+        // 2. ad_config (JSON)
+        parseAdConfig(sp)
+
+        // 3. enable_force_update
+        parseEnableForceUpdate(sp)
+
+        // 4. new_version_name
+        parseNewVersionName(sp)
     }
 
-    fun getR2BaseUrl(): String {
-        val remoteUrl = getString(KEY_R2_BASE_URL).trim()
-        if (isValidUrl(remoteUrl)) {
-            val normalized = normalizeUrl(remoteUrl)
-            Log.d(TAG, "getR2BaseUrl: remoteConfig=$normalized")
-            return normalized
+    private fun parseEnableAllAds(sp: SpManager) {
+        try {
+            val remoteValue = remoteConfig?.getBoolean(KEY_ENABLE_ALL_ADS) ?: true
+            isEnableAllAds = remoteValue
+            sp.putBoolean(KEY_ENABLE_ALL_ADS, remoteValue)
+            Log.d(TAG, "enable_all_ads = $isEnableAllAds")
+        } catch (e: Exception) {
+            Log.e(TAG, "Parse enable_all_ads error: ${e.message}")
         }
+    }
 
-        val context = MyApplication.context ?: return ""
-        val localUrl = SpManager.get(context)
-            .getString(KEY_R2_BASE_URL, "")
-            ?.trim()
-            .orEmpty()
-        val normalized = normalizeUrl(localUrl)
-        if (normalized.isNotBlank()) {
-            Log.d(TAG, "getR2BaseUrl: local=$normalized remoteRaw=$remoteUrl")
-            return normalized
+    private fun parseAdConfig(sp: SpManager) {
+        try {
+            val json = remoteConfig?.getString(KEY_ADS_CONFIG) ?: ""
+            if (json.isNotBlank()) {
+                val oldJson = sp.getString(KEY_ADS_CONFIG, "") ?: ""
+                adConfig = gson.fromJson(json, AdConfig::class.java)
+                if (json != oldJson) {
+                    sp.putString(KEY_ADS_CONFIG, json)
+                    Log.d(TAG, "Updated ad_config from remote")
+                } else {
+                    Log.d(TAG, "ad_config unchanged")
+                }
+            } else {
+                Log.d(TAG, "ad_config is empty from remote, using local/default")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Parse ad_config error: ${e.message}")
         }
-
-        Log.w(TAG, "getR2BaseUrl: Remote Config/local empty, fallback=$DEFAULT_R2_BASE_URL")
-        return DEFAULT_R2_BASE_URL
     }
 
-    fun getTemplateCollection(): String {
-        val collection = getString(KEY_TEMPLATE_COLLECTION, DEFAULT_TEMPLATE_COLLECTION)
-            .ifBlank { DEFAULT_TEMPLATE_COLLECTION }
-        Log.d(TAG, "getTemplateCollection: $collection")
-        return collection
+    private fun parseEnableForceUpdate(sp: SpManager) {
+        try {
+            val remoteValue = remoteConfig?.getBoolean(KEY_ENABLE_FORCE_UPDATE) ?: false
+            enableForceUpdate = remoteValue
+            sp.putBoolean(KEY_ENABLE_FORCE_UPDATE, remoteValue)
+            Log.d(TAG, "enable_force_update = $enableForceUpdate")
+        } catch (e: Exception) {
+            Log.e(TAG, "Parse enable_force_update error: ${e.message}")
+        }
     }
 
-    fun hasValidBaseUrl(): Boolean = getBaseUrl().isNotEmpty()
+    private fun parseNewVersionName(sp: SpManager) {
+        try {
+            val remoteValue = remoteConfig?.getString(KEY_NEW_VERSION_NAME)?.trim() ?: ""
+            newVersionName = remoteValue
+            sp.putString(KEY_NEW_VERSION_NAME, remoteValue)
+            Log.d(TAG, "new_version_name = '$newVersionName'")
+        } catch (e: Exception) {
+            Log.e(TAG, "Parse new_version_name error: ${e.message}")
+        }
+    }
+
+    // ========================= PUBLIC HELPERS =========================
 
     fun getString(key: String, defaultValue: String = ""): String =
         remoteConfig?.getString(key)?.ifEmpty { defaultValue } ?: defaultValue
@@ -219,36 +247,4 @@ class FirebaseConfigManager private constructor() {
 
     fun getLong(key: String, defaultValue: Long = 0L): Long =
         runCatching { remoteConfig?.getLong(key) }.getOrElse { defaultValue } ?: defaultValue
-
-    private fun isValidUrl(url: String): Boolean =
-        url.startsWith("http://") || url.startsWith("https://")
-
-    private fun normalizeUrl(url: String): String {
-        if (url.isEmpty()) return ""
-        return if (url.endsWith("/")) url else "$url/"
-    }
-
-    private fun parseAndSaveAdConfig() {
-        saveRemoteStringIfValidUrl(KEY_R2_BASE_URL)
-//        val sp = MyApplication.instance?.spManager ?: return
-//        val json = remoteConfig.getString(KEY_ADS_CONFIG)
-//        val oldJson = sp.getString(KEY_ADS_CONFIG, "") ?: ""
-//        if (json.isNotBlank() && json != oldJson) {
-//            try {
-//                adConfig = gson.fromJson(json, AdConfig::class.java)
-//                sp.putString(KEY_ADS_CONFIG, json)
-//                Log.d(TAG, "Updated ad_config from remote $adConfig")
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Parse ad_config error: ${e.message}")
-//            }
-//        }
-    }
-
-    private fun saveRemoteStringIfValidUrl(key: String) {
-        val context = MyApplication.context ?: return
-        val remoteValue = getString(key).trim()
-        if (!isValidUrl(remoteValue)) return
-        SpManager.get(context).putString(key, normalizeUrl(remoteValue))
-    }
-
 }

@@ -1,6 +1,12 @@
 <resources>
     <string name="app_name" translatable="false">My Application</string>
 
+    <string name="facebook_app_id" translatable="false">884085354175902</string>
+    <string name="facebook_client_token" translatable="false">e09179fa8a54f98376da1aee90841f3c</string>
+    <string name="tiktok_app_id" translatable="false">7650511791912058901</string>
+    <string name="appsflyer_key" translatable="false">X6Kiaov2ZqhCk3fc7dGnCd</string>
+    <string name="adjust_app_token" translatable="false">YOUR_ADJUST_APP_TOKEN</string>
+
     <string name="txt_english" translatable="false">English</string>
     <string name="txt_arabic" translatable="false">Arabic</string>
     <string name="txt_hindi" translatable="false">Hindi</string>
@@ -12,7 +18,6 @@
     <string name="txt_indonesian" translatable="false">Indonesian</string>
     <string name="txt_french" translatable="false">French</string>
     <string name="txt_vietnamese" translatable="false">Vietnamese</string>
-
 
     <string name="txt_select">Select</string>
     <string name="txt_cancel">Cancel</string>
@@ -92,4 +97,5 @@
     <string name="txt_noti_body_10">Make custom Roblox outfits for boys, girls, anime fans, and more.</string>
     <string name="txt_report">Report</string>
     <string name="txt_language">Language</string>
+    <string name="txt_loading_ads">Loading Ads...</string>
 </resources>

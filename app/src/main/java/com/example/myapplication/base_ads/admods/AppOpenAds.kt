@@ -1,0 +1,162 @@
+package com.example.myapplication.base_ads.admods
+
+
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import com.example.myapplication.base_ads.base.BaseAds
+import com.example.myapplication.base_ads.dialog.DialogLoadingAds
+import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.appopen.AppOpenAd
+import com.example.myapplication.base_ads.interfaces.OnAdmobLoadListener
+import com.example.myapplication.base_ads.utils.AdsEx.logAdRevenue
+import com.example.myapplication.base_ads.utils.MmpAdEventTracker
+import java.util.Date
+class AppOpenAds(
+    context: Context,
+    private val id: String,
+    private val adPlacement: String = ""
+) : BaseAds(context) {
+
+    companion object {
+        private const val TAG = "TAG_openAdmob"
+    }
+
+    private var isLoadingAd = false
+    private var appOpenAd: AppOpenAd? = null
+    private var loadTime: Long = 0
+
+    fun loadAd(activity: Activity) {
+        loadAd(activity, null)
+    }
+
+    fun loadAd(activity: Activity, listener: OnAdmobLoadListener?) {
+//        if (isPro()) {
+//            listener?.onLoad()
+//            return
+//        }
+        Log.i(TAG, "loadAd()")
+
+        if (isLoadingAd || isAdAvailable()) {
+            Log.i(TAG, "isLoadingAd || isAdAvailable → skip load")
+            return
+        }
+
+        isLoadingAd = true
+
+        AppOpenAd.load(
+            activity,
+            id,
+            adRequestBuilder.build(),
+            object : AppOpenAd.AppOpenAdLoadCallback() {
+
+                override fun onAdLoaded(ad: AppOpenAd) {
+                    Log.i(TAG, "onAdLoaded")
+                    isLoadingAd = false
+                    appOpenAd = ad
+                    loadTime = Date().time
+                    listener?.onLoad()
+
+                    appOpenAd?.setOnPaidEventListener { adValue ->
+                        context.logAdRevenue(
+                            adValue = adValue,
+                            adUnitId = adPlacement,
+                            responseInfo = appOpenAd?.responseInfo,
+                            adType = "ad_app_open_resume"
+                        )
+                    }
+                }
+
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    Log.i(TAG, "onAdFailedToLoad: ${error.message}")
+                    isLoadingAd = false
+                    listener?.onError(error.message)
+                }
+            }
+        )
+    }
+
+    private fun isAdAvailable(): Boolean {
+        return appOpenAd != null && wasLoadTimeLessThanNHoursAgo(4)
+    }
+
+    private fun wasLoadTimeLessThanNHoursAgo(hours: Long): Boolean {
+        val diff = Date().time - loadTime
+        val millisPerHour = 3600000L
+        return diff < millisPerHour * hours
+    }
+
+    fun showAdAppOnResume(currentActivity: Activity?) {
+//        if (isPro()) return
+        if (currentActivity == null || currentActivity.isFinishing || currentActivity.isDestroyed) {
+            Log.i(TAG, "Activity not valid → skip showing AppOpen")
+            return
+        }
+
+        if (isShowingOpenAd || !canShowOpenApp) {
+            Log.i(TAG, "isShowingOpenAd || !canShowOpenApp → cannot show")
+            return
+        }
+
+        if (!isAdAvailable()) {
+            Log.i(TAG, "!isAdAvailable → loadAd()")
+            loadAd(currentActivity)
+            return
+        }
+
+        val ad = appOpenAd ?: return
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                Log.i(TAG, "onAdDismissedFullScreenContent")
+                latestTimeShowOpenAd = System.currentTimeMillis()
+                appOpenAd = null
+                isShowingOpenAd = false
+                loadAd(currentActivity)
+            }
+
+            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                Log.i(TAG, "onAdFailedToShowFullScreenContent: ${adError.message}")
+                appOpenAd = null
+                isShowingOpenAd = false
+                loadAd(currentActivity)
+            }
+
+            override fun onAdShowedFullScreenContent() {
+                Log.i(TAG, "onAdShowedFullScreenContent")
+                isShowingOpenAd = true
+            }
+
+            override fun onAdClicked() {
+                MmpAdEventTracker.logClick(
+                    context = context,
+                    adType = "ad_app_open_resume",
+                    placement = adPlacement,
+                    responseInfo = ad.responseInfo
+                )
+            }
+        }
+
+        val dialog = DialogLoadingAds(currentActivity)
+
+        try {
+            dialog.show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Dialog show error: ${e.message}")
+            ad.show(currentActivity)
+            return
+        }
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!currentActivity.isFinishing && !currentActivity.isDestroyed) {
+                dialog.dismiss()
+                ad.show(currentActivity)
+            }
+        }, 1500)
+    }
+
+}

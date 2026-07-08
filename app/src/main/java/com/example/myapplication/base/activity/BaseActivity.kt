@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Toast
@@ -21,6 +22,7 @@ import androidx.fragment.app.Fragment
 import androidx.viewbinding.ViewBinding
 import com.example.myapplication.R
 import com.example.myapplication.ui.dialog.DialogLoading
+import com.example.myapplication.utils.FirebaseConfigManager
 import com.example.myapplication.utils.SpManager
 import com.example.myapplication.utils.SystemUtil
 import javax.inject.Inject
@@ -36,6 +38,8 @@ abstract class BaseActivity<VB : ViewBinding>(
     lateinit var spManager: SpManager
 
     private var dialogLoading: DialogLoading? = null
+    var isCheckOpenApp = false
+    val remoteConfig get() = FirebaseConfigManager.instance().adConfig
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(SystemUtil.setLocale(newBase))
@@ -43,11 +47,15 @@ abstract class BaseActivity<VB : ViewBinding>(
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        isCheckOpenApp = spManager.isCompletedOnboarding
+        Log.i("TAG_CHECK_OPEN_APP", "onCreate: $isCheckOpenApp")
+        Log.d("TAG_remoteConfig", "onCreate: remoteConfig $remoteConfig")
         enableEdgeToEdge()
         _binding = bindingInflater(layoutInflater)
         setContentView(binding.root)
 
         setBaseHideNavigation()
+        applySystemBarInsets()
 
         initView()
         initData()

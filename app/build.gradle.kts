@@ -24,7 +24,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.longdt.ads"
         minSdk = 24
         //noinspection OldTargetApi
         targetSdk = 36
@@ -51,6 +51,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            manifestPlaceholders["ad_app_id"] = "ca-app-pub-1458302844590844~9993781373"
+        }
+        debug {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            manifestPlaceholders["ad_app_id"] = "ca-app-pub-3940256099942544~3347511713"
         }
     }
     compileOptions {
@@ -148,4 +157,29 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.firestore)
+
+    //AdMob
+    implementation("com.google.android.gms:play-services-ads:25.4.0")
+
+    //UMP
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
+
+    //Facebook SDK
+    implementation("com.facebook.android:facebook-android-sdk:18.1.3")
+
+    //mediation admob
+    implementation("com.google.ads.mediation:facebook:6.20.0.0")
+    implementation("com.google.ads.mediation:applovin:13.3.1.0")
+    implementation("com.google.ads.mediation:vungle:7.5.0.0")
+    implementation("com.google.ads.mediation:pangle:7.9.1.3.0")
+    implementation("com.google.ads.mediation:mintegral:16.9.71.0")
+    implementation("com.google.ads.mediation:inmobi:10.6.1.0")
+    implementation("com.google.ads.mediation:ironsource:8.2.0.0")
+
+    //adjust
+    implementation("com.adjust.sdk:adjust-android:5.4.6")
+
+    implementation("com.appsflyer:af-android-sdk:6.17.0")
+    implementation("com.android.installreferrer:installreferrer:2.2")
+    implementation("com.google.android.gms:play-services-appset:16.1.0")
 }
