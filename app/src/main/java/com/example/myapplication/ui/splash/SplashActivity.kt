@@ -58,6 +58,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
     private var adsInterSplash: InterstitialAds? = null
 
     override fun initView() {
+        setBaseFullScreen()
         splashStartTime = System.currentTimeMillis()
         isCheckUninstall = intent.getBooleanExtra(Constant.KEY_OPEN_SPLASH, false)
         trackNotificationOpen(intent)

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -11,28 +11,28 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <View
+        <androidx.appcompat.widget.AppCompatButton
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@color/red" />
+            android:background="@color/red"
+            android:layout_marginTop="@dimen/size16"
+            android:text="Inter" />
 
-        <View
+        <androidx.appcompat.widget.AppCompatButton
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@color/black" />
-
-        <View
+            android:layout_marginTop="@dimen/size16"
+            android:background="@color/red"
+            android:text="Reward" />
+        <androidx.appcompat.widget.AppCompatButton
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@color/white" />
-
-
+            android:layout_marginTop="@dimen/size16"
+            android:background="@color/red"
+            android:text="Inter next native fs" />
     </LinearLayout>
 
     <include
-        android:id="@+id/toolbarMain"
-        layout="@layout/layout_toolbar" />
-</RelativeLayout>
+        android:id="@+id/ad_view_container"
+        layout="@layout/layout_banner_ads" />
+</androidx.constraintlayout.widget.ConstraintLayout>
