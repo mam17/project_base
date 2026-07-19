@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.gms.ads.nativead.NativeAdView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/nativeAdView"
+<com.facebook.shimmer.ShimmerFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@color/white"
-    android:padding="@dimen/size12">
+    android:layout_height="wrap_content">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="@dimen/size12">
 
-        <com.google.android.gms.ads.nativead.MediaView
+        <View
             android:id="@+id/mediaView"
             android:layout_width="match_parent"
-            android:layout_height="180dp" />
+            android:layout_height="180dp"
+            android:background="#999999" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -23,10 +22,11 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <ImageView
+            <View
                 android:id="@+id/ivIcon"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
+                android:background="#999999"
                 android:contentDescription="@null" />
 
             <LinearLayout
@@ -40,49 +40,50 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-
                     <TextView
                         android:id="@+id/tvAdBadge"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@color/col_main"
-                        android:gravity="center"
+                        android:layout_height="match_parent"
+                        android:background="#999999"
                         android:paddingHorizontal="@dimen/size6"
                         android:paddingVertical="@dimen/size2"
+                        android:gravity="center"
                         android:text="Ad"
                         android:textColor="@color/white"
                         android:textSize="@dimen/size10"
                         android:textStyle="bold" />
-
                     <TextView
                         android:id="@+id/tvHeadline"
+                        android:layout_marginStart="@dimen/size4"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/size4"
+                        android:background="#999999"
                         android:textColor="@color/black"
                         android:textSize="@dimen/size16"
                         android:textStyle="bold" />
                 </LinearLayout>
+
 
                 <TextView
                     android:id="@+id/tvBody"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/size4"
+                    android:background="#999999"
                     android:maxLines="2"
                     android:textColor="@color/black"
                     android:textSize="@dimen/size12" />
             </LinearLayout>
         </LinearLayout>
 
-        <androidx.appcompat.widget.AppCompatButton
+        <View
             android:id="@+id/btnCallToAction"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/size48"
+            android:layout_height="@dimen/size50"
             android:layout_marginTop="@dimen/size8"
-            android:background="@drawable/bg_cta_ads"
+            android:background="#999999"
             android:stateListAnimator="@null"
-            android:textColor="@color/white"
+            android:textColor="#FFFFFF"
             android:textStyle="bold" />
     </LinearLayout>
-</com.google.android.gms.ads.nativead.NativeAdView>
+</com.facebook.shimmer.ShimmerFrameLayout>

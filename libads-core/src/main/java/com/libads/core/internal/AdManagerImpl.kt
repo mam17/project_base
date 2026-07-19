@@ -65,10 +65,12 @@ internal class AdManagerImpl(
         }
         if (cache.isLoading(adUnit.id)) {
             AdLogger.d("AdUnit '${adUnit.id}' đang load rồi, bỏ qua request trùng.")
+            cache.addCallback(adUnit.id, callback)
             return
         }
 
         cache.markLoading(adUnit.id)
+        cache.addCallback(adUnit.id, callback)
         scope.launch {
             val result = withTimeoutOrNull(adUnit.timeoutMillis.milliseconds) {
                 awaitLoad(provider, context.applicationContext, adUnit)
@@ -78,7 +80,7 @@ internal class AdManagerImpl(
             if (result is AdResult.TimedOut) {
                 AdLogger.w("AdUnit '${adUnit.id}' load timeout sau ${adUnit.timeoutMillis}ms")
             }
-            callback?.onResult(result)
+            cache.dispatchCallbacks(adUnit.id, result)
         }
     }
 

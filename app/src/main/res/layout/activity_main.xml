@@ -24,7 +24,7 @@
             android:layout_marginTop="@dimen/size12"
             android:background="@color/red"
             android:gravity="center"
-            android:text="ShowInter"
+            android:text="Show Inter"
             android:textColor="@color/white"
             android:textSize="@dimen/size16"
             android:textStyle="bold" />
@@ -36,7 +36,7 @@
             android:layout_marginTop="@dimen/size12"
             android:background="@color/blue"
             android:gravity="center"
-            android:text="ShowInter"
+            android:text="Show Reward"
             android:textColor="@color/white"
             android:textSize="@dimen/size16"
             android:textStyle="bold" />
@@ -48,7 +48,7 @@
             android:layout_marginTop="@dimen/size12"
             android:background="@color/col_main"
             android:gravity="center"
-            android:text="ShowInter"
+            android:text="Show Inter Native Full"
             android:textColor="@color/white"
             android:textSize="@dimen/size16"
             android:textStyle="bold" />
@@ -65,4 +65,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <include
+        android:id="@+id/frBannerAds"
+        layout="@layout/layout_banner_ads"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <include
+        android:id="@+id/frNativeTimeOut"
+        layout="@layout/fl_native_full_time_count" />
 </androidx.constraintlayout.widget.ConstraintLayout>

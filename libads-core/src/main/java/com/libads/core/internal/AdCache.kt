@@ -1,5 +1,7 @@
 package com.libads.core.internal
 
+import com.libads.core.callback.AdLoadCallback
+import com.libads.core.callback.AdResult
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -13,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 internal class AdCache {
 
     private val loadingState = ConcurrentHashMap<String, Boolean>()
+    private val pendingCallbacks = ConcurrentHashMap<String, MutableList<AdLoadCallback>>()
 
     fun isLoading(adUnitId: String): Boolean = loadingState[adUnitId] == true
 
@@ -26,9 +29,22 @@ internal class AdCache {
 
     fun clear(adUnitId: String) {
         loadingState.remove(adUnitId)
+        pendingCallbacks.remove(adUnitId)
     }
 
     fun clearAll() {
         loadingState.clear()
+        pendingCallbacks.clear()
+    }
+
+    fun addCallback(adUnitId: String, callback: AdLoadCallback?) {
+        if (callback == null) return
+        pendingCallbacks.getOrPut(adUnitId) { mutableListOf() }.add(callback)
+    }
+
+    fun dispatchCallbacks(adUnitId: String, result: AdResult) {
+        pendingCallbacks.remove(adUnitId)?.forEach { callback ->
+            callback.onResult(result)
+        }
     }
 }

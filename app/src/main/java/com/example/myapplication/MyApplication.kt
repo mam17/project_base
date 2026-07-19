@@ -12,11 +12,11 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.myapplication.ads.AdMobAds
-import com.example.myapplication.ads.AdMobProvider
 import com.example.myapplication.utils.AppEx.setupAppShortcuts
 import com.example.myapplication.utils.SpManager
 import com.example.myapplication.utils.notification.NotificationUtils
 import com.libads.core.AdManager
+import com.libads.core.provider.admob.AdMobProvider
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Singleton
 

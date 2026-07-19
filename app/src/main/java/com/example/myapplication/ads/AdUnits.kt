@@ -4,6 +4,7 @@ import com.example.myapplication.BuildConfig
 import com.libads.core.AdType
 import com.libads.core.AdUnit
 import com.libads.core.CollapsiblePositionType
+import com.libads.core.provider.admob.AdMobProvider
 
 object AdUnits {
     val mainInterstitial = AdUnit(

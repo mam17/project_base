@@ -1,8 +1,12 @@
 package com.example.myapplication.ui.main
 
+import android.os.CountDownTimer
+import android.view.View
 import com.example.myapplication.R
 import com.example.myapplication.ads.AdMobAds
 import com.example.myapplication.ads.AdUnits
+import com.example.myapplication.ads.FullScreenAdUtils
+import com.example.myapplication.ads.NativeAdUtils
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.ui.alertfull.NotificationFSUtil
@@ -14,16 +18,25 @@ import com.example.myapplication.utils.PermissionUtils
 import com.example.myapplication.utils.notification.NotificationUtils
 import com.libads.core.AdManager
 import com.libads.core.CollapsiblePositionType
-import com.libads.core.callback.AdShowCallback
+import com.libads.core.callback.AdResult
 
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::inflate) {
+    private var nativeCloseTimer: CountDownTimer? = null
+
     override fun initView() {
+        setBaseFullScreen()
         NotificationFSUtil.createNotificationChannel(this)
         NotificationUtils.cancelOnboardingReminder(this)
         spManager.isCompletedOnboarding = true
+        binding.frNativeTimeOut.root.visibility = View.GONE
+        binding.frNativeTimeOut.nativeFullContainer.visibility = View.GONE
+        binding.frNativeTimeOut.nativeFullLoadingContainer.visibility = View.GONE
+        binding.frNativeTimeOut.rlCloseAds.visibility = View.GONE
+        binding.frNativeTimeOut.tvTimeCount.visibility = View.VISIBLE
+        binding.frNativeTimeOut.btnCloseOnb.visibility = View.GONE
         showBanner()
         binding.tvShowInter.setOnClickListener {
             showInterstitial()
@@ -34,13 +47,14 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
 
         binding.tvShowInterNative.setOnClickListener {
-            showNative()
+            showInterstitialThenNativeTimeout()
         }
     }
 
     override fun initData() {
         AdManager.getInstance().preload(AdUnits.mainInterstitial)
         AdManager.getInstance().preload(AdUnits.mainRewarded)
+        showNative()
     }
 
 
@@ -81,46 +95,79 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun showInterstitial() {
-        AdManager.getInstance().show(this, AdUnits.mainInterstitial, object : AdShowCallback {
-            override fun onAdDismissed() {
-                showToast("Interstitial dismissed")
-                AdManager.getInstance().preload(AdUnits.mainInterstitial)
-            }
-
-            override fun onAdFailedToShow(errorCode: Int, message: String) {
-                showToast("Interstitial failed: $message")
-                AdManager.getInstance().preload(AdUnits.mainInterstitial)
-            }
-        })
+        FullScreenAdUtils.showInterstitial(
+            activity = this,
+            onDismissed = { showToast("Interstitial dismissed") },
+            onFailed = { message -> showToast("Interstitial failed: $message") }
+        )
     }
 
     private fun showRewarded() {
-        AdManager.getInstance().show(this, AdUnits.mainRewarded, object : AdShowCallback {
-            override fun onUserEarnedReward(amount: Int, type: String) {
-                showToast("Reward earned: $amount $type")
-            }
-
-            override fun onAdDismissed() {
-                showToast("Rewarded dismissed")
-                AdManager.getInstance().preload(AdUnits.mainRewarded)
-            }
-
-            override fun onAdFailedToShow(errorCode: Int, message: String) {
-                showToast("Rewarded failed: $message")
-                AdManager.getInstance().preload(AdUnits.mainRewarded)
-            }
-        })
+        FullScreenAdUtils.showRewarded(
+            activity = this,
+            onRewardEarned = { amount, type -> showToast("Reward earned: $amount $type") },
+            onDismissed = { showToast("Rewarded dismissed") },
+            onFailed = { message -> showToast("Rewarded failed: $message") }
+        )
     }
 
     private fun showBanner() {
-        AdMobAds.showBanner(binding.frBanner, CollapsiblePositionType.TOP)
+        binding.frBannerAds.shimmerBanner.visibility = View.VISIBLE
+        binding.frBannerAds.shimmerBanner.startShimmer()
+        binding.frBannerAds.bannerContainer.post {
+            AdMobAds.showBanner(binding.frBannerAds.bannerContainer, CollapsiblePositionType.BOTTOM) { result ->
+                binding.frBannerAds.shimmerBanner.stopShimmer()
+                binding.frBannerAds.shimmerBanner.visibility = View.GONE
+                if (result is AdResult.Failure) {
+                    showToast("Banner failed: ${result.message}")
+                }
+            }
+        }
     }
 
     private fun showNative() {
-        AdMobAds.showNative(binding.frNative)
+        NativeAdUtils.showNative(
+            context = this,
+            nativeContainer = binding.frNative,
+            onFailure = { message -> showToast("Native failed: $message") }
+        )
+    }
+
+    private fun showInterstitialThenNativeTimeout() {
+        FullScreenAdUtils.showInterstitial(
+            activity = this,
+            onDismissed = { showNativeTimeout() },
+            onFailed = { showNativeTimeout() }
+        )
+    }
+
+    private fun showNativeTimeout() {
+        nativeCloseTimer?.cancel()
+        nativeCloseTimer = NativeAdUtils.showNativeWithCountdown(
+            rootView = binding.frNativeTimeOut.root,
+            nativeContainer = binding.frNativeTimeOut.nativeFullContainer,
+            loadingContainer = binding.frNativeTimeOut.nativeFullLoadingContainer,
+            closeContainer = binding.frNativeTimeOut.rlCloseAds,
+            timeCountView = binding.frNativeTimeOut.tvTimeCount,
+            closeButton = binding.frNativeTimeOut.btnCloseOnb,
+            countdownSeconds = NATIVE_CLOSE_COUNTDOWN_SECONDS,
+            onClose = {
+                nativeCloseTimer?.cancel()
+                nativeCloseTimer = null
+                startNextActivity(LanguageActivity::class.java)
+            },
+            onFailure = { message -> showToast("Native failed: $message") }
+        )
+    }
+
+    override fun onDestroy() {
+        nativeCloseTimer?.cancel()
+        nativeCloseTimer = null
+        super.onDestroy()
     }
 
     companion object {
         private const val PERMISSION_FRAGMENT_TAG = "PermissionFragment"
+        private const val NATIVE_CLOSE_COUNTDOWN_SECONDS = 3L
     }
 }

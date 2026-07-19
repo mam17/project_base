@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.libads.core"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 21
@@ -38,17 +38,16 @@ android {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-common:2.8.2")
-    implementation("androidx.lifecycle:lifecycle-process:2.8.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.core:core-ktx:1.18.0")
+    implementation("androidx.lifecycle:lifecycle-common:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-process:2.10.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    implementation("com.google.android.gms:play-services-ads:25.4.0")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
 
-// Cấu hình publish để repo app khác gọi bằng implement (JitPack tự đọc phần này
-// mà không cần thêm gì, hoặc dùng cho GitHub Packages nếu bạn muốn private hơn)
 afterEvaluate {
     publishing {
         publications {
@@ -59,7 +58,7 @@ afterEvaluate {
                 artifactId = "dtl-libads-core"
                 version = findProperty("version")?.toString()
                     ?: System.getenv("VERSION_NAME")
-                    ?: "1.0.0"
+                            ?: "1.0.0"
             }
         }
     }

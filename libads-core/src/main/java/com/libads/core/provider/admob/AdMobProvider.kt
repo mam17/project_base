@@ -1,29 +1,36 @@
-package com.example.myapplication.ads
+package com.libads.core.provider.admob
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.view.LayoutInflater
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import com.google.android.gms.ads.AdListener
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import com.google.ads.mediation.admob.AdMobAdapter
 import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
-import com.google.ads.mediation.admob.AdMobAdapter
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdView
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
-import com.example.myapplication.R
 import com.libads.core.AdType
 import com.libads.core.AdUnit
 import com.libads.core.CollapsiblePositionType
@@ -60,10 +67,7 @@ class AdMobProvider : AdProvider {
     }
 
     private fun loadInterstitial(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
-        InterstitialAd.load(
-            context,
-            adUnit.networkAdUnitId,
-            AdRequest.Builder().build(),
+        InterstitialAd.load(context, adUnit.networkAdUnitId, AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     interstitialAds[adUnit.id] = ad
@@ -74,15 +78,11 @@ class AdMobProvider : AdProvider {
                     interstitialAds.remove(adUnit.id)
                     callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
                 }
-            }
-        )
+            })
     }
 
     private fun loadRewarded(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
-        RewardedAd.load(
-            context,
-            adUnit.networkAdUnitId,
-            AdRequest.Builder().build(),
+        RewardedAd.load(context, adUnit.networkAdUnitId, AdRequest.Builder().build(),
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
                     rewardedAds[adUnit.id] = ad
@@ -93,15 +93,11 @@ class AdMobProvider : AdProvider {
                     rewardedAds.remove(adUnit.id)
                     callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
                 }
-            }
-        )
+            })
     }
 
     private fun loadAppOpen(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
-        AppOpenAd.load(
-            context,
-            adUnit.networkAdUnitId,
-            AdRequest.Builder().build(),
+        AppOpenAd.load(context, adUnit.networkAdUnitId, AdRequest.Builder().build(),
             object : AppOpenAd.AppOpenAdLoadCallback() {
                 override fun onAdLoaded(ad: AppOpenAd) {
                     appOpenAds[adUnit.id] = ad
@@ -114,8 +110,7 @@ class AdMobProvider : AdProvider {
                     appOpenLoadTimes.remove(adUnit.id)
                     callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
                 }
-            }
-        )
+            })
     }
 
     override fun isReady(adUnit: AdUnit): Boolean {
@@ -124,6 +119,7 @@ class AdMobProvider : AdProvider {
             AdType.REWARDED -> rewardedAds[adUnit.id] != null
             AdType.BANNER -> bannerAds[adUnit.id] != null
             AdType.APP_OPEN -> isAppOpenReady(adUnit)
+            AdType.NATIVE -> nativeAds[adUnit.id] != null
             else -> false
         }
     }
@@ -143,27 +139,7 @@ class AdMobProvider : AdProvider {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob interstitial is not ready")
             return
         }
-
-        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-            override fun onAdShowedFullScreenContent() {
-                callback.onAdShown()
-            }
-
-            override fun onAdClicked() {
-                callback.onAdClicked()
-            }
-
-            override fun onAdDismissedFullScreenContent() {
-                interstitialAds.remove(adUnit.id)
-                callback.onAdDismissed()
-            }
-
-            override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                interstitialAds.remove(adUnit.id)
-                callback.onAdFailedToShow(error.code, error.message)
-            }
-        }
-
+        ad.fullScreenContentCallback = createFullScreenCallback(callback) { interstitialAds.remove(adUnit.id) }
         ad.show(activity)
     }
 
@@ -173,27 +149,7 @@ class AdMobProvider : AdProvider {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob rewarded is not ready")
             return
         }
-
-        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-            override fun onAdShowedFullScreenContent() {
-                callback.onAdShown()
-            }
-
-            override fun onAdClicked() {
-                callback.onAdClicked()
-            }
-
-            override fun onAdDismissedFullScreenContent() {
-                rewardedAds.remove(adUnit.id)
-                callback.onAdDismissed()
-            }
-
-            override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                rewardedAds.remove(adUnit.id)
-                callback.onAdFailedToShow(error.code, error.message)
-            }
-        }
-
+        ad.fullScreenContentCallback = createFullScreenCallback(callback) { rewardedAds.remove(adUnit.id) }
         ad.show(activity) { rewardItem ->
             callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
         }
@@ -207,45 +163,44 @@ class AdMobProvider : AdProvider {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob app open is not ready")
             return
         }
+        ad.fullScreenContentCallback = createFullScreenCallback(callback) {
+            appOpenAds.remove(adUnit.id)
+            appOpenLoadTimes.remove(adUnit.id)
+        }
+        ad.show(activity)
+    }
 
-        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-            override fun onAdShowedFullScreenContent() {
-                callback.onAdShown()
-            }
-
-            override fun onAdClicked() {
-                callback.onAdClicked()
-            }
+    private fun createFullScreenCallback(
+        callback: AdShowCallback,
+        clear: () -> Unit
+    ): FullScreenContentCallback {
+        return object : FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() = callback.onAdShown()
+            override fun onAdClicked() = callback.onAdClicked()
 
             override fun onAdDismissedFullScreenContent() {
-                appOpenAds.remove(adUnit.id)
-                appOpenLoadTimes.remove(adUnit.id)
+                clear()
                 callback.onAdDismissed()
             }
 
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                appOpenAds.remove(adUnit.id)
-                appOpenLoadTimes.remove(adUnit.id)
+                clear()
                 callback.onAdFailedToShow(error.code, error.message)
             }
         }
-
-        ad.show(activity)
     }
 
     override fun renderInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback) {
-        if (adUnit.type == AdType.NATIVE) {
-            renderNativeInto(container, adUnit, callback)
-            return
-        }
-
-        if (adUnit.type != AdType.BANNER) {
-            callback.onResult(
+        when (adUnit.type) {
+            AdType.BANNER -> renderBannerInto(container, adUnit, callback)
+            AdType.NATIVE -> renderNativeInto(container, adUnit, callback)
+            else -> callback.onResult(
                 AdResult.Failure(adUnit.id, ERROR_UNSUPPORTED, "Unsupported render type: ${adUnit.type}")
             )
-            return
         }
+    }
 
+    private fun renderBannerInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback) {
         bannerAds.remove(adUnit.id)?.destroy()
         container.removeAllViews()
 
@@ -274,12 +229,13 @@ class AdMobProvider : AdProvider {
                 nativeAds.remove(adUnit.id)?.destroy()
                 nativeAds[adUnit.id] = nativeAd
 
-                val nativeAdView = LayoutInflater.from(container.context)
-                    .inflate(R.layout.layout_native_ad, container, false) as NativeAdView
+                val nativeAdView = findNativeAdView(container) ?: createNativeAdView(container.context)
                 bindNativeAd(nativeAd, nativeAdView)
 
-                container.removeAllViews()
-                container.addView(nativeAdView)
+                if (nativeAdView.parent == null) {
+                    container.removeAllViews()
+                    container.addView(nativeAdView)
+                }
                 callback.onResult(AdResult.Success(adUnit.id))
             }
             .withAdListener(object : AdListener() {
@@ -292,29 +248,150 @@ class AdMobProvider : AdProvider {
         adLoader.loadAd(AdRequest.Builder().build())
     }
 
+    private fun findNativeAdView(view: View): NativeAdView? {
+        if (view is NativeAdView) return view
+        if (view !is ViewGroup) return null
+
+        for (index in 0 until view.childCount) {
+            val nativeAdView = findNativeAdView(view.getChildAt(index))
+            if (nativeAdView != null) return nativeAdView
+        }
+        return null
+    }
+
+    private fun createNativeAdView(context: Context): NativeAdView {
+        val root = NativeAdView(context)
+        root.setBackgroundColor(Color.WHITE)
+        root.setPadding(dp(context, 12), dp(context, 12), dp(context, 12), dp(context, 12))
+
+        val content = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        root.addView(content, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+
+        val badge = TextView(context).apply {
+            text = "Ad"
+            setTextColor(Color.WHITE)
+            textSize = 10f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(dp(context, 6), dp(context, 2), dp(context, 6), dp(context, 2))
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(23, 115, 234))
+                cornerRadius = dp(context, 2).toFloat()
+            }
+        }
+        content.addView(badge, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+
+        val mediaView = MediaView(context)
+        content.addView(mediaView, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 180)).apply {
+            topMargin = dp(context, 8)
+        })
+
+        val row = LinearLayout(context).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            orientation = LinearLayout.HORIZONTAL
+        }
+        content.addView(row, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(context, 8)
+        })
+
+        val iconView = ImageView(context)
+        row.addView(iconView, LinearLayout.LayoutParams(dp(context, 48), dp(context, 48)))
+
+        val textColumn = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        row.addView(textColumn, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+            marginStart = dp(context, 8)
+        })
+
+        val headlineView = TextView(context).apply {
+            setTextColor(Color.BLACK)
+            textSize = 16f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        textColumn.addView(headlineView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+
+        val bodyView = TextView(context).apply {
+            setTextColor(Color.DKGRAY)
+            textSize = 12f
+            maxLines = 2
+        }
+        textColumn.addView(bodyView, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(context, 4)
+        })
+
+        val ctaView = Button(context).apply {
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(23, 115, 234))
+                cornerRadius = dp(context, 6).toFloat()
+            }
+        }
+        content.addView(ctaView, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 48)).apply {
+            topMargin = dp(context, 8)
+        })
+
+        root.mediaView = mediaView
+        root.headlineView = headlineView
+        root.bodyView = bodyView
+        root.iconView = iconView
+        root.callToActionView = ctaView
+        return root
+    }
+
     private fun bindNativeAd(nativeAd: NativeAd, nativeAdView: NativeAdView) {
-        nativeAdView.mediaView = nativeAdView.findViewById(R.id.mediaView)
-        nativeAdView.headlineView = nativeAdView.findViewById(R.id.tvHeadline)
-        nativeAdView.bodyView = nativeAdView.findViewById(R.id.tvBody)
-        nativeAdView.iconView = nativeAdView.findViewById(R.id.ivIcon)
-        nativeAdView.callToActionView = nativeAdView.findViewById(R.id.btnCallToAction)
+        ensureNativeAssetViews(nativeAdView)
 
-        (nativeAdView.headlineView as? android.widget.TextView)?.text = nativeAd.headline
+        (nativeAdView.headlineView as? TextView)?.text = nativeAd.headline
 
-        val bodyView = nativeAdView.bodyView as? android.widget.TextView
+        val bodyView = nativeAdView.bodyView as? TextView
         bodyView?.text = nativeAd.body
         bodyView?.visibility = if (nativeAd.body.isNullOrBlank()) View.GONE else View.VISIBLE
 
-        val iconView = nativeAdView.iconView as? android.widget.ImageView
+        val iconView = nativeAdView.iconView as? ImageView
         val iconDrawable = nativeAd.icon?.drawable
         iconView?.setImageDrawable(iconDrawable)
         iconView?.visibility = if (iconDrawable == null) View.GONE else View.VISIBLE
 
-        val callToActionView = nativeAdView.callToActionView as? android.widget.Button
+        val callToActionView = nativeAdView.callToActionView as? TextView
         callToActionView?.text = nativeAd.callToAction
         callToActionView?.visibility = if (nativeAd.callToAction.isNullOrBlank()) View.GONE else View.VISIBLE
 
         nativeAdView.setNativeAd(nativeAd)
+    }
+
+    private fun ensureNativeAssetViews(nativeAdView: NativeAdView) {
+        if (nativeAdView.mediaView == null) {
+            nativeAdView.mediaView = nativeAdView.findDescendantByResourceName("mediaView", MediaView::class.java)
+        }
+        if (nativeAdView.headlineView == null) {
+            nativeAdView.headlineView = nativeAdView.findDescendantByResourceName("tvHeadline", TextView::class.java)
+        }
+        if (nativeAdView.bodyView == null) {
+            nativeAdView.bodyView = nativeAdView.findDescendantByResourceName("tvBody", TextView::class.java)
+        }
+        if (nativeAdView.iconView == null) {
+            nativeAdView.iconView = nativeAdView.findDescendantByResourceName("ivIcon", ImageView::class.java)
+        }
+        if (nativeAdView.callToActionView == null) {
+            nativeAdView.callToActionView = nativeAdView.findDescendantByResourceName("btnCallToAction", TextView::class.java)
+        }
+    }
+
+    private fun <T : View> View.findDescendantByResourceName(name: String, viewClass: Class<T>): T? {
+        if (viewClass.isInstance(this) && id != View.NO_ID && resources.getResourceEntryName(id) == name) {
+            return viewClass.cast(this)
+        }
+        if (this !is ViewGroup) return null
+
+        for (index in 0 until childCount) {
+            val match = getChildAt(index).findDescendantByResourceName(name, viewClass)
+            if (match != null) return match
+        }
+        return null
     }
 
     private fun getAnchoredAdaptiveBannerSize(container: ViewGroup): AdSize {
@@ -355,6 +432,10 @@ class AdMobProvider : AdProvider {
         val loadTime = appOpenLoadTimes[adUnit.id] ?: return false
         val isFresh = System.currentTimeMillis() - loadTime < APP_OPEN_EXPIRATION_MS
         return appOpenAds[adUnit.id] != null && isFresh
+    }
+
+    private fun dp(context: Context, value: Int): Int {
+        return (value * context.resources.displayMetrics.density).toInt()
     }
 
     companion object {
