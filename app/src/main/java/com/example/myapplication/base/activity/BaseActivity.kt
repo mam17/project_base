@@ -48,6 +48,7 @@ abstract class BaseActivity<VB : ViewBinding>(
         setContentView(binding.root)
 
         setBaseHideNavigation()
+        applySystemBarInsets()
 
         initView()
         initData()

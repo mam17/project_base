@@ -1,0 +1,367 @@
+package com.example.myapplication.ads
+
+import android.app.Activity
+import android.content.Context
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import com.google.android.gms.ads.AdListener
+import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.AdLoader
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import com.google.ads.mediation.admob.AdMobAdapter
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.appopen.AppOpenAd
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.nativead.NativeAdView
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.example.myapplication.R
+import com.libads.core.AdType
+import com.libads.core.AdUnit
+import com.libads.core.CollapsiblePositionType
+import com.libads.core.callback.AdLoadCallback
+import com.libads.core.callback.AdResult
+import com.libads.core.callback.AdShowCallback
+import com.libads.core.provider.AdProvider
+
+class AdMobProvider : AdProvider {
+    override val name: String = PROVIDER_NAME
+
+    private val interstitialAds = mutableMapOf<String, InterstitialAd>()
+    private val rewardedAds = mutableMapOf<String, RewardedAd>()
+    private val bannerAds = mutableMapOf<String, AdView>()
+    private val appOpenAds = mutableMapOf<String, AppOpenAd>()
+    private val appOpenLoadTimes = mutableMapOf<String, Long>()
+    private val nativeAds = mutableMapOf<String, NativeAd>()
+
+    override fun initialize(context: Context, onInitialized: (success: Boolean) -> Unit) {
+        MobileAds.initialize(context) {
+            onInitialized(true)
+        }
+    }
+
+    override fun load(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        when (adUnit.type) {
+            AdType.INTERSTITIAL -> loadInterstitial(context, adUnit, callback)
+            AdType.REWARDED -> loadRewarded(context, adUnit, callback)
+            AdType.APP_OPEN -> loadAppOpen(context, adUnit, callback)
+            else -> callback.onResult(
+                AdResult.Failure(adUnit.id, ERROR_UNSUPPORTED, "Unsupported load type: ${adUnit.type}")
+            )
+        }
+    }
+
+    private fun loadInterstitial(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        InterstitialAd.load(
+            context,
+            adUnit.networkAdUnitId,
+            AdRequest.Builder().build(),
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialAds[adUnit.id] = ad
+                    callback.onResult(AdResult.Success(adUnit.id))
+                }
+
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    interstitialAds.remove(adUnit.id)
+                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                }
+            }
+        )
+    }
+
+    private fun loadRewarded(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        RewardedAd.load(
+            context,
+            adUnit.networkAdUnitId,
+            AdRequest.Builder().build(),
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    rewardedAds[adUnit.id] = ad
+                    callback.onResult(AdResult.Success(adUnit.id))
+                }
+
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    rewardedAds.remove(adUnit.id)
+                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                }
+            }
+        )
+    }
+
+    private fun loadAppOpen(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        AppOpenAd.load(
+            context,
+            adUnit.networkAdUnitId,
+            AdRequest.Builder().build(),
+            object : AppOpenAd.AppOpenAdLoadCallback() {
+                override fun onAdLoaded(ad: AppOpenAd) {
+                    appOpenAds[adUnit.id] = ad
+                    appOpenLoadTimes[adUnit.id] = System.currentTimeMillis()
+                    callback.onResult(AdResult.Success(adUnit.id))
+                }
+
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    appOpenAds.remove(adUnit.id)
+                    appOpenLoadTimes.remove(adUnit.id)
+                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                }
+            }
+        )
+    }
+
+    override fun isReady(adUnit: AdUnit): Boolean {
+        return when (adUnit.type) {
+            AdType.INTERSTITIAL -> interstitialAds[adUnit.id] != null
+            AdType.REWARDED -> rewardedAds[adUnit.id] != null
+            AdType.BANNER -> bannerAds[adUnit.id] != null
+            AdType.APP_OPEN -> isAppOpenReady(adUnit)
+            else -> false
+        }
+    }
+
+    override fun show(activity: Activity, adUnit: AdUnit, callback: AdShowCallback) {
+        when (adUnit.type) {
+            AdType.INTERSTITIAL -> showInterstitial(activity, adUnit, callback)
+            AdType.REWARDED -> showRewarded(activity, adUnit, callback)
+            AdType.APP_OPEN -> showAppOpen(activity, adUnit, callback)
+            else -> callback.onAdFailedToShow(ERROR_UNSUPPORTED, "Unsupported show type: ${adUnit.type}")
+        }
+    }
+
+    private fun showInterstitial(activity: Activity, adUnit: AdUnit, callback: AdShowCallback) {
+        val ad = interstitialAds[adUnit.id]
+        if (ad == null) {
+            callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob interstitial is not ready")
+            return
+        }
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() {
+                callback.onAdShown()
+            }
+
+            override fun onAdClicked() {
+                callback.onAdClicked()
+            }
+
+            override fun onAdDismissedFullScreenContent() {
+                interstitialAds.remove(adUnit.id)
+                callback.onAdDismissed()
+            }
+
+            override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                interstitialAds.remove(adUnit.id)
+                callback.onAdFailedToShow(error.code, error.message)
+            }
+        }
+
+        ad.show(activity)
+    }
+
+    private fun showRewarded(activity: Activity, adUnit: AdUnit, callback: AdShowCallback) {
+        val ad = rewardedAds[adUnit.id]
+        if (ad == null) {
+            callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob rewarded is not ready")
+            return
+        }
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() {
+                callback.onAdShown()
+            }
+
+            override fun onAdClicked() {
+                callback.onAdClicked()
+            }
+
+            override fun onAdDismissedFullScreenContent() {
+                rewardedAds.remove(adUnit.id)
+                callback.onAdDismissed()
+            }
+
+            override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                rewardedAds.remove(adUnit.id)
+                callback.onAdFailedToShow(error.code, error.message)
+            }
+        }
+
+        ad.show(activity) { rewardItem ->
+            callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
+        }
+    }
+
+    private fun showAppOpen(activity: Activity, adUnit: AdUnit, callback: AdShowCallback) {
+        val ad = appOpenAds[adUnit.id]
+        if (ad == null || !isAppOpenReady(adUnit)) {
+            appOpenAds.remove(adUnit.id)
+            appOpenLoadTimes.remove(adUnit.id)
+            callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob app open is not ready")
+            return
+        }
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() {
+                callback.onAdShown()
+            }
+
+            override fun onAdClicked() {
+                callback.onAdClicked()
+            }
+
+            override fun onAdDismissedFullScreenContent() {
+                appOpenAds.remove(adUnit.id)
+                appOpenLoadTimes.remove(adUnit.id)
+                callback.onAdDismissed()
+            }
+
+            override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                appOpenAds.remove(adUnit.id)
+                appOpenLoadTimes.remove(adUnit.id)
+                callback.onAdFailedToShow(error.code, error.message)
+            }
+        }
+
+        ad.show(activity)
+    }
+
+    override fun renderInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback) {
+        if (adUnit.type == AdType.NATIVE) {
+            renderNativeInto(container, adUnit, callback)
+            return
+        }
+
+        if (adUnit.type != AdType.BANNER) {
+            callback.onResult(
+                AdResult.Failure(adUnit.id, ERROR_UNSUPPORTED, "Unsupported render type: ${adUnit.type}")
+            )
+            return
+        }
+
+        bannerAds.remove(adUnit.id)?.destroy()
+        container.removeAllViews()
+
+        val adView = AdView(container.context)
+        adView.adUnitId = adUnit.networkAdUnitId
+        adView.setAdSize(getAnchoredAdaptiveBannerSize(container))
+        adView.adListener = object : AdListener() {
+            override fun onAdLoaded() {
+                bannerAds[adUnit.id] = adView
+                callback.onResult(AdResult.Success(adUnit.id))
+            }
+
+            override fun onAdFailedToLoad(error: LoadAdError) {
+                bannerAds.remove(adUnit.id)
+                callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+            }
+        }
+
+        container.addView(adView)
+        adView.loadAd(createBannerAdRequest(adUnit))
+    }
+
+    private fun renderNativeInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback) {
+        val adLoader = AdLoader.Builder(container.context, adUnit.networkAdUnitId)
+            .forNativeAd { nativeAd ->
+                nativeAds.remove(adUnit.id)?.destroy()
+                nativeAds[adUnit.id] = nativeAd
+
+                val nativeAdView = LayoutInflater.from(container.context)
+                    .inflate(R.layout.layout_native_ad, container, false) as NativeAdView
+                bindNativeAd(nativeAd, nativeAdView)
+
+                container.removeAllViews()
+                container.addView(nativeAdView)
+                callback.onResult(AdResult.Success(adUnit.id))
+            }
+            .withAdListener(object : AdListener() {
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                }
+            })
+            .build()
+
+        adLoader.loadAd(AdRequest.Builder().build())
+    }
+
+    private fun bindNativeAd(nativeAd: NativeAd, nativeAdView: NativeAdView) {
+        nativeAdView.mediaView = nativeAdView.findViewById(R.id.mediaView)
+        nativeAdView.headlineView = nativeAdView.findViewById(R.id.tvHeadline)
+        nativeAdView.bodyView = nativeAdView.findViewById(R.id.tvBody)
+        nativeAdView.iconView = nativeAdView.findViewById(R.id.ivIcon)
+        nativeAdView.callToActionView = nativeAdView.findViewById(R.id.btnCallToAction)
+
+        (nativeAdView.headlineView as? android.widget.TextView)?.text = nativeAd.headline
+
+        val bodyView = nativeAdView.bodyView as? android.widget.TextView
+        bodyView?.text = nativeAd.body
+        bodyView?.visibility = if (nativeAd.body.isNullOrBlank()) View.GONE else View.VISIBLE
+
+        val iconView = nativeAdView.iconView as? android.widget.ImageView
+        val iconDrawable = nativeAd.icon?.drawable
+        iconView?.setImageDrawable(iconDrawable)
+        iconView?.visibility = if (iconDrawable == null) View.GONE else View.VISIBLE
+
+        val callToActionView = nativeAdView.callToActionView as? android.widget.Button
+        callToActionView?.text = nativeAd.callToAction
+        callToActionView?.visibility = if (nativeAd.callToAction.isNullOrBlank()) View.GONE else View.VISIBLE
+
+        nativeAdView.setNativeAd(nativeAd)
+    }
+
+    private fun getAnchoredAdaptiveBannerSize(container: ViewGroup): AdSize {
+        val displayMetrics = container.resources.displayMetrics
+        val widthPixels = if (container.width > 0) container.width else displayMetrics.widthPixels
+        val widthDp = (widthPixels / displayMetrics.density).toInt().coerceAtLeast(MIN_BANNER_WIDTH_DP)
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(container.context, widthDp)
+    }
+
+    private fun createBannerAdRequest(adUnit: AdUnit): AdRequest {
+        val builder = AdRequest.Builder()
+        val collapsibleValue = when (adUnit.collapsiblePositionType) {
+            CollapsiblePositionType.TOP -> "top"
+            CollapsiblePositionType.BOTTOM -> "bottom"
+            CollapsiblePositionType.NONE -> null
+        }
+
+        if (collapsibleValue != null) {
+            val extras = Bundle().apply {
+                putString("collapsible", collapsibleValue)
+            }
+            builder.addNetworkExtrasBundle(AdMobAdapter::class.java, extras)
+        }
+
+        return builder.build()
+    }
+
+    override fun destroy(adUnit: AdUnit) {
+        interstitialAds.remove(adUnit.id)
+        rewardedAds.remove(adUnit.id)
+        bannerAds.remove(adUnit.id)?.destroy()
+        appOpenAds.remove(adUnit.id)
+        appOpenLoadTimes.remove(adUnit.id)
+        nativeAds.remove(adUnit.id)?.destroy()
+    }
+
+    private fun isAppOpenReady(adUnit: AdUnit): Boolean {
+        val loadTime = appOpenLoadTimes[adUnit.id] ?: return false
+        val isFresh = System.currentTimeMillis() - loadTime < APP_OPEN_EXPIRATION_MS
+        return appOpenAds[adUnit.id] != null && isFresh
+    }
+
+    companion object {
+        const val PROVIDER_NAME = "admob"
+        private const val MIN_BANNER_WIDTH_DP = 320
+        private const val APP_OPEN_EXPIRATION_MS = 4 * 60 * 60 * 1000L
+        private const val ERROR_NOT_READY = -10
+        private const val ERROR_UNSUPPORTED = -11
+    }
+}

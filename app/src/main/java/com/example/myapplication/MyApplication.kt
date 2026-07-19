@@ -5,10 +5,18 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.example.myapplication.ads.AdMobAds
+import com.example.myapplication.ads.AdMobProvider
 import com.example.myapplication.utils.AppEx.setupAppShortcuts
 import com.example.myapplication.utils.SpManager
 import com.example.myapplication.utils.notification.NotificationUtils
+import com.libads.core.AdManager
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Singleton
 
@@ -17,17 +25,10 @@ import javax.inject.Singleton
 class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
     DefaultLifecycleObserver {
     private var startedActivityCount = 0
-
-    companion object {
-        private const val TAG = "TAG_MyApplication"
-
-        @SuppressLint("StaticFieldLeak")
-        var context: Context? = null
-
-        @SuppressLint("StaticFieldLeak")
-        private var mInstance: MyApplication? = null
-        val instance get() = mInstance
-    }
+    private var currentActivity: FragmentActivity? = null
+    private var hasCompletedFirstForeground = false
+    private var shouldShowAppOpenOnResume = false
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate() {
         super<Application>.onCreate()
@@ -35,6 +36,11 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
         context = applicationContext
         setupAppShortcuts(this)
         registerActivityLifecycleCallbacks(this)
+        AdManager.init(this) {
+            registerProvider(AdMobProvider())
+        }
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        AdMobAds.preloadAppOpenResume()
     }
 
     override fun onActivityCreated(p0: Activity, p1: Bundle?) {
@@ -47,6 +53,13 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
     }
 
     override fun onActivityResumed(p0: Activity) {
+        currentActivity = p0 as? FragmentActivity
+        if (shouldShowAppOpenOnResume) {
+            shouldShowAppOpenOnResume = false
+            mainHandler.postDelayed({
+                currentActivity?.let { AdMobAds.showAppOpenResume(it) }
+            }, APP_OPEN_SHOW_DELAY_MS)
+        }
     }
 
     override fun onActivitySaveInstanceState(p0: Activity, p1: Bundle) {
@@ -54,6 +67,7 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
 
     override fun onActivityStarted(p0: Activity) {
         startedActivityCount++
+        currentActivity = p0 as? FragmentActivity
     }
 
     override fun onActivityStopped(activity: Activity) {
@@ -66,5 +80,28 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
                 NotificationUtils.scheduleOnboardingReminder(applicationContext)
             }
         }
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        super.onStart(owner)
+        if (!hasCompletedFirstForeground) {
+            hasCompletedFirstForeground = true
+            AdMobAds.preloadAppOpenResume()
+            return
+        }
+
+        shouldShowAppOpenOnResume = true
+    }
+
+    companion object {
+        private const val TAG = "TAG_MyApplication"
+        private const val APP_OPEN_SHOW_DELAY_MS = 300L
+
+        @SuppressLint("StaticFieldLeak")
+        var context: Context? = null
+
+        @SuppressLint("StaticFieldLeak")
+        private var mInstance: MyApplication? = null
+        val instance get() = mInstance
     }
 }

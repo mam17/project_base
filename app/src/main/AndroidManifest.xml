@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission
         android:name="android.permission.USE_FULL_SCREEN_INTENT"
         tools:ignore="FullScreenIntentPolicy" />
@@ -15,6 +16,7 @@
     <application
         android:name=".MyApplication"
         android:allowBackup="true"
+        tools:replace="android:allowBackup,android:supportsRtl,android:dataExtractionRules,android:fullBackupContent"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -42,7 +44,7 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".ui.main.MainActivity"
-            android:exported="true"
+            android:exported="false"
             android:screenOrientation="portrait" />
 
         <provider
@@ -65,7 +67,7 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".ui.alertfull.AlertFullScreenActivity"
-            android:exported="true"
+            android:exported="false"
             android:screenOrientation="portrait"
             android:showWhenLocked="true"
             android:theme="@style/TransparentFullScreenTheme"
@@ -87,6 +89,9 @@
         <receiver
             android:name=".receiver.OnboardingReminderReceiver"
             android:exported="false" />
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${ad_app_id}" />
     </application>
 
 </manifest>

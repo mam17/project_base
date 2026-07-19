@@ -24,7 +24,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.longdt.ads"
         minSdk = 24
         //noinspection OldTargetApi
         targetSdk = 36
@@ -51,6 +51,23 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            manifestPlaceholders["ad_app_id"] = "ca-app-pub-3940256099942544~3347511713"
+        }
+        debug {
+
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
+            manifestPlaceholders["ad_app_id"] = "ca-app-pub-3940256099942544~3347511713"
+            buildConfigField("String", "inter_test", "\"ca-app-pub-3940256099942544/1033173712\"")
+            buildConfigField("String", "native_test", "\"ca-app-pub-3940256099942544/2247696110\"")
+            buildConfigField("String", "reward_test", "\"ca-app-pub-3940256099942544/5224354917\"")
+            buildConfigField("String", "appopen_resume_test", "\"ca-app-pub-3940256099942544/9257395921\"")
+            buildConfigField("String", "banner_test", "\"ca-app-pub-3940256099942544/2014213617\"")
+
         }
     }
     compileOptions {
@@ -148,4 +165,31 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.firestore)
+
+    implementation(project(":libads-core"))
+
+    //AdMob
+    implementation("com.google.android.gms:play-services-ads:24.7.0")
+
+    //UMP
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
+
+    //Facebook SDK
+    implementation("com.facebook.android:facebook-android-sdk:18.1.3")
+
+    //mediation admob
+//    implementation("com.google.ads.mediation:facebook:6.20.0.0")
+//    implementation("com.google.ads.mediation:applovin:13.3.1.0")
+//    implementation("com.google.ads.mediation:vungle:7.5.0.0")
+//    implementation("com.google.ads.mediation:pangle:7.2.0.6.0")
+//    implementation("com.google.ads.mediation:mintegral:16.9.71.0")
+//    implementation("com.google.ads.mediation:inmobi:10.6.1.0")
+//    implementation("com.google.ads.mediation:ironsource:8.2.0.0")
+//
+//    implementation("com.appsflyer:af-android-sdk:6.17.0")
+//    implementation("com.appsflyer:adrevenue:6.9.0")
+//    implementation("com.android.installreferrer:installreferrer:2.2")
+//    implementation("com.google.android.gms:play-services-appset:16.1.0")
+//
+//    implementation("com.android.billingclient:billing-ktx:8.2.1")
 }

@@ -1,38 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".ui.main.MainActivity">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@color/red" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@color/black" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@color/white" />
-
-
-    </LinearLayout>
-
     <include
         android:id="@+id/toolbarMain"
         layout="@layout/layout_toolbar" />
-</RelativeLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvShowInter"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/size48"
+            android:layout_marginTop="@dimen/size12"
+            android:background="@color/red"
+            android:gravity="center"
+            android:text="ShowInter"
+            android:textColor="@color/white"
+            android:textSize="@dimen/size16"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvShowReward"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/size48"
+            android:layout_marginTop="@dimen/size12"
+            android:background="@color/blue"
+            android:gravity="center"
+            android:text="ShowInter"
+            android:textColor="@color/white"
+            android:textSize="@dimen/size16"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvShowInterNative"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/size48"
+            android:layout_marginTop="@dimen/size12"
+            android:background="@color/col_main"
+            android:gravity="center"
+            android:text="ShowInter"
+            android:textColor="@color/white"
+            android:textSize="@dimen/size16"
+            android:textStyle="bold" />
+
+        <FrameLayout
+            android:id="@+id/frNative"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/size12" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/frBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
