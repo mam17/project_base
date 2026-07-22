@@ -12,6 +12,7 @@ import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.ui.alertfull.NotificationFSUtil
 import com.example.myapplication.ui.alertfull.NotificationFSUtil.scheduleFullScreenNotificationDiary
 import com.example.myapplication.ui.alertfull.PermissionFragment
+import com.example.myapplication.ui.dialog.DialogLoadingAds
 import com.example.myapplication.ui.language.LanguageActivity
 import com.example.myapplication.utils.DialogEx.showDialogAlert
 import com.example.myapplication.utils.PermissionUtils
@@ -19,6 +20,7 @@ import com.example.myapplication.utils.notification.NotificationUtils
 import com.libads.core.AdManager
 import com.libads.core.CollapsiblePositionType
 import com.libads.core.callback.AdResult
+import com.libads.core.callback.AdShowCallback
 
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -49,11 +51,22 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         binding.tvShowInterNative.setOnClickListener {
             showInterstitialThenNativeTimeout()
         }
+        binding.tvLoadAndShowInter.setOnClickListener {
+            loadAndShowInterstitial()
+        }
+        binding.tvLoadAndShowReward.setOnClickListener {
+            loadAndShowRewarded()
+        }
+        binding.tvShowRewardInter.setOnClickListener {
+            loadAndShowRewardedInterstitial()
+        }
     }
 
     override fun initData() {
+        AdMobAds.preloadAppOpenResume()
         AdManager.getInstance().preload(AdUnits.mainInterstitial)
         AdManager.getInstance().preload(AdUnits.mainRewarded)
+        AdManager.getInstance().preload(AdUnits.mainRewardedInterstitial)
         showNative()
     }
 
@@ -109,6 +122,74 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             onDismissed = { showToast("Rewarded dismissed") },
             onFailed = { message -> showToast("Rewarded failed: $message") }
         )
+    }
+
+    private fun loadAndShowInterstitial() {
+        loadAndShowWithLoading(
+            adUnit = AdUnits.mainInterstitial,
+            adName = "LoadAndShow interstitial",
+            rewardPrefix = null
+        )
+    }
+
+    private fun loadAndShowRewarded() {
+        loadAndShowWithLoading(
+            adUnit = AdUnits.mainRewarded,
+            adName = "LoadAndShow rewarded",
+            rewardPrefix = "Reward earned"
+        )
+    }
+
+    private fun loadAndShowRewardedInterstitial() {
+        loadAndShowWithLoading(
+            adUnit = AdUnits.mainRewardedInterstitial,
+            adName = "Rewarded interstitial",
+            rewardPrefix = "Rewarded interstitial earned"
+        )
+    }
+
+    private fun loadAndShowWithLoading(
+        adUnit: com.libads.core.AdUnit,
+        adName: String,
+        rewardPrefix: String?
+    ) {
+        val loadingDialog = DialogLoadingAds(this)
+        loadingDialog.show()
+        AdManager.getInstance().loadAndShow(
+            activity = this,
+            adUnit = adUnit,
+            callback = createLoadAndShowCallback(
+                adName = adName,
+                rewardPrefix = rewardPrefix,
+                loadingDialog = loadingDialog
+            )
+        )
+    }
+
+    private fun createLoadAndShowCallback(
+        adName: String,
+        rewardPrefix: String?,
+        loadingDialog: DialogLoadingAds
+    ): AdShowCallback {
+        return object : AdShowCallback {
+            override fun onAdShown() {
+                loadingDialog.dismiss()
+            }
+
+            override fun onUserEarnedReward(amount: Int, type: String) {
+                rewardPrefix?.let { showToast("$it: $amount $type") }
+            }
+
+            override fun onAdDismissed() {
+                loadingDialog.dismiss()
+                showToast("$adName dismissed")
+            }
+
+            override fun onAdFailedToShow(errorCode: Int, message: String) {
+                loadingDialog.dismiss()
+                showToast("$adName failed: $message")
+            }
+        }
     }
 
     private fun showBanner() {

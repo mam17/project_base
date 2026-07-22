@@ -31,6 +31,8 @@ import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdView
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import com.libads.core.AdType
 import com.libads.core.AdUnit
 import com.libads.core.CollapsiblePositionType
@@ -44,6 +46,7 @@ class AdMobProvider : AdProvider {
 
     private val interstitialAds = mutableMapOf<String, InterstitialAd>()
     private val rewardedAds = mutableMapOf<String, RewardedAd>()
+    private val rewardedInterstitialAds = mutableMapOf<String, RewardedInterstitialAd>()
     private val bannerAds = mutableMapOf<String, AdView>()
     private val appOpenAds = mutableMapOf<String, AppOpenAd>()
     private val appOpenLoadTimes = mutableMapOf<String, Long>()
@@ -59,6 +62,7 @@ class AdMobProvider : AdProvider {
         when (adUnit.type) {
             AdType.INTERSTITIAL -> loadInterstitial(context, adUnit, callback)
             AdType.REWARDED -> loadRewarded(context, adUnit, callback)
+            AdType.REWARDED_INTERSTITIAL -> loadRewardedInterstitial(context, adUnit, callback)
             AdType.APP_OPEN -> loadAppOpen(context, adUnit, callback)
             else -> callback.onResult(
                 AdResult.Failure(adUnit.id, ERROR_UNSUPPORTED, "Unsupported load type: ${adUnit.type}")
@@ -96,6 +100,21 @@ class AdMobProvider : AdProvider {
             })
     }
 
+    private fun loadRewardedInterstitial(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        RewardedInterstitialAd.load(context, adUnit.networkAdUnitId, AdRequest.Builder().build(),
+            object : RewardedInterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedInterstitialAd) {
+                    rewardedInterstitialAds[adUnit.id] = ad
+                    callback.onResult(AdResult.Success(adUnit.id))
+                }
+
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    rewardedInterstitialAds.remove(adUnit.id)
+                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                }
+            })
+    }
+
     private fun loadAppOpen(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
         AppOpenAd.load(context, adUnit.networkAdUnitId, AdRequest.Builder().build(),
             object : AppOpenAd.AppOpenAdLoadCallback() {
@@ -117,6 +136,7 @@ class AdMobProvider : AdProvider {
         return when (adUnit.type) {
             AdType.INTERSTITIAL -> interstitialAds[adUnit.id] != null
             AdType.REWARDED -> rewardedAds[adUnit.id] != null
+            AdType.REWARDED_INTERSTITIAL -> rewardedInterstitialAds[adUnit.id] != null
             AdType.BANNER -> bannerAds[adUnit.id] != null
             AdType.APP_OPEN -> isAppOpenReady(adUnit)
             AdType.NATIVE -> nativeAds[adUnit.id] != null
@@ -128,6 +148,7 @@ class AdMobProvider : AdProvider {
         when (adUnit.type) {
             AdType.INTERSTITIAL -> showInterstitial(activity, adUnit, callback)
             AdType.REWARDED -> showRewarded(activity, adUnit, callback)
+            AdType.REWARDED_INTERSTITIAL -> showRewardedInterstitial(activity, adUnit, callback)
             AdType.APP_OPEN -> showAppOpen(activity, adUnit, callback)
             else -> callback.onAdFailedToShow(ERROR_UNSUPPORTED, "Unsupported show type: ${adUnit.type}")
         }
@@ -150,6 +171,18 @@ class AdMobProvider : AdProvider {
             return
         }
         ad.fullScreenContentCallback = createFullScreenCallback(callback) { rewardedAds.remove(adUnit.id) }
+        ad.show(activity) { rewardItem ->
+            callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
+        }
+    }
+
+    private fun showRewardedInterstitial(activity: Activity, adUnit: AdUnit, callback: AdShowCallback) {
+        val ad = rewardedInterstitialAds[adUnit.id]
+        if (ad == null) {
+            callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob rewarded interstitial is not ready")
+            return
+        }
+        ad.fullScreenContentCallback = createFullScreenCallback(callback) { rewardedInterstitialAds.remove(adUnit.id) }
         ad.show(activity) { rewardItem ->
             callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
         }
@@ -422,6 +455,7 @@ class AdMobProvider : AdProvider {
     override fun destroy(adUnit: AdUnit) {
         interstitialAds.remove(adUnit.id)
         rewardedAds.remove(adUnit.id)
+        rewardedInterstitialAds.remove(adUnit.id)
         bannerAds.remove(adUnit.id)?.destroy()
         appOpenAds.remove(adUnit.id)
         appOpenLoadTimes.remove(adUnit.id)

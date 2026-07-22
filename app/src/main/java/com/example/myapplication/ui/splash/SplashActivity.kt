@@ -17,9 +17,11 @@ import com.example.myapplication.utils.DialogEx.showDialogAlert
 import com.example.myapplication.utils.NetworkUtil
 import com.example.myapplication.utils.PermissionUtils
 import com.example.myapplication.utils.notification.NotificationUtils
+import com.libads.core.consent.UmpConsentManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @SuppressLint("CustomSplashScreen")
 @AndroidEntryPoint
@@ -86,11 +88,13 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
             return
         }
         isStartingNextScreen = true
-        lifecycleScope.launch {
-            val startedAt = System.currentTimeMillis()
-            val remainingDelay = SPLASH_MIN_DURATION_MS - (System.currentTimeMillis() - startedAt)
-            if (remainingDelay > 0) delay(remainingDelay)
-            openNextScreen()
+        val startedAt = System.currentTimeMillis()
+        UmpConsentManager.gatherConsent(this) {
+            lifecycleScope.launch {
+                val remainingDelay = SPLASH_MIN_DURATION_MS - (System.currentTimeMillis() - startedAt)
+                if (remainingDelay > 0) delay(remainingDelay.milliseconds)
+                openNextScreen()
+            }
         }
     }
 

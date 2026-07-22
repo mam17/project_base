@@ -8,5 +8,7 @@
     <color name="gray">#9B9B9B</color>
     <color name="transparent">#00000000</color>
     <color name="col_main">#00FF0B</color>
+    <color name="col_purple">#A819EB</color>
+    <color name="col_yellow">#FFBD00</color>
 
 </resources>

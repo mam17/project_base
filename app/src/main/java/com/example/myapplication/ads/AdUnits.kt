@@ -21,6 +21,13 @@ object AdUnits {
         providerName = AdMobProvider.PROVIDER_NAME
     )
 
+    val mainRewardedInterstitial = AdUnit(
+        id = "main_rewarded_interstitial",
+        type = AdType.REWARDED_INTERSTITIAL,
+        networkAdUnitId = BuildConfig.reward_inter_test,
+        providerName = AdMobProvider.PROVIDER_NAME
+    )
+
     val mainBanner = AdUnit(
         id = "main_banner",
         type = AdType.BANNER,

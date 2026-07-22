@@ -65,6 +65,7 @@ android {
             buildConfigField("String", "inter_test", "\"ca-app-pub-3940256099942544/1033173712\"")
             buildConfigField("String", "native_test", "\"ca-app-pub-3940256099942544/2247696110\"")
             buildConfigField("String", "reward_test", "\"ca-app-pub-3940256099942544/5224354917\"")
+            buildConfigField("String", "reward_inter_test", "\"ca-app-pub-3940256099942544/5354046379\"")
             buildConfigField("String", "appopen_resume_test", "\"ca-app-pub-3940256099942544/9257395921\"")
             buildConfigField("String", "banner_test", "\"ca-app-pub-3940256099942544/2014213617\"")
 
@@ -170,9 +171,6 @@ dependencies {
 
     //AdMob
     implementation("com.google.android.gms:play-services-ads:24.7.0")
-
-    //UMP
-    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 
     //Facebook SDK
     implementation("com.facebook.android:facebook-android-sdk:18.1.3")

@@ -53,6 +53,42 @@
             android:textSize="@dimen/size16"
             android:textStyle="bold" />
 
+        <TextView
+            android:id="@+id/tvLoadAndShowReward"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/size48"
+            android:layout_marginTop="@dimen/size12"
+            android:background="@color/col_yellow"
+            android:gravity="center"
+            android:text="Load And Show Reward"
+            android:textColor="@color/white"
+            android:textSize="@dimen/size16"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvLoadAndShowInter"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/size48"
+            android:layout_marginTop="@dimen/size12"
+            android:background="@color/col_purple"
+            android:gravity="center"
+            android:text="Load And Show Inter"
+            android:textColor="@color/white"
+            android:textSize="@dimen/size16"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvShowRewardInter"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/size48"
+            android:layout_marginTop="@dimen/size12"
+            android:background="@color/gray"
+            android:gravity="center"
+            android:text="Load And Show Rewarded Interstitial"
+            android:textColor="@color/white"
+            android:textSize="@dimen/size16"
+            android:textStyle="bold" />
+
         <FrameLayout
             android:id="@+id/frNative"
             android:layout_width="match_parent"

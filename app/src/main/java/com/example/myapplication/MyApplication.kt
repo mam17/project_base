@@ -40,7 +40,6 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
             registerProvider(AdMobProvider())
         }
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-        AdMobAds.preloadAppOpenResume()
     }
 
     override fun onActivityCreated(p0: Activity, p1: Bundle?) {
@@ -86,7 +85,6 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
         super.onStart(owner)
         if (!hasCompletedFirstForeground) {
             hasCompletedFirstForeground = true
-            AdMobAds.preloadAppOpenResume()
             return
         }
 

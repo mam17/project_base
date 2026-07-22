@@ -34,6 +34,8 @@ interface AdManager {
     /** Show quảng cáo full-screen. Tự load nếu chưa cache, có timeout an toàn. */
     fun show(activity: Activity, adUnit: AdUnit, callback: AdShowCallback? = null)
 
+    fun loadAndShow(activity: Activity, adUnit: AdUnit, callback: AdShowCallback? = null)
+
     /** Render banner/native ad vào 1 container trong layout */
     fun renderInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback? = null)
 
