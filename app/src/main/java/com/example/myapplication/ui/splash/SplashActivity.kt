@@ -18,6 +18,7 @@ import com.example.myapplication.utils.firebase.FirebaseTrackingManager
 import com.example.myapplication.utils.NetworkUtil
 import com.example.myapplication.utils.PermissionUtils
 import com.example.myapplication.utils.notification.NotificationUtils
+import com.example.myapplication.utils.mmp.AppsFlyerMmpManager
 import com.libads.core.consent.UmpConsentManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
@@ -35,6 +36,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
     private var isStartingNextScreen = false
     private var isNetworkDialogShowing = false
     override fun initView() {
+        AppsFlyerMmpManager.onLauncherActivityCreated(this)
         isCheckUninstall = intent.getBooleanExtra(Constant.KEY_OPEN_SPLASH, false)
         trackNotificationOpen(intent)
         if (PermissionUtils.isNotificationPermissionGranted(this)) {
@@ -89,6 +91,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
         isStartingNextScreen = true
         val startedAt = System.currentTimeMillis()
         UmpConsentManager.gatherConsent(this) {
+            AppsFlyerMmpManager.onConsentReady()
             lifecycleScope.launch {
                 val remainingDelay = SPLASH_MIN_DURATION_MS - (System.currentTimeMillis() - startedAt)
                 if (remainingDelay > 0) delay(remainingDelay.milliseconds)

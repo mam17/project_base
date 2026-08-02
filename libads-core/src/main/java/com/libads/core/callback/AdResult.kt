@@ -33,8 +33,17 @@ interface TwoFloorAdLoadCallback : AdLoadCallback {
 interface AdShowCallback {
     fun onAdShown() {}
     fun onAdImpression() {}
+    fun onAdImpression(mediationInfo: AdMediationInfo?) {
+        onAdImpression()
+    }
     fun onAdClicked() {}
+    fun onAdClicked(mediationInfo: AdMediationInfo?) {
+        onAdClicked()
+    }
     fun onPaidEvent(revenue: AdRevenue) {}
+    fun onPaidEvent(revenue: AdRevenue, mediationInfo: AdMediationInfo?) {
+        onPaidEvent(revenue)
+    }
     fun onAdDismissed() {}
     fun onAdFailedToShow(errorCode: Int, message: String) {}
     /** Chỉ áp dụng cho REWARDED / REWARDED_INTERSTITIAL */

@@ -24,6 +24,7 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.OnPaidEventListener
+import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
@@ -38,6 +39,7 @@ import com.libads.core.AdType
 import com.libads.core.AdUnit
 import com.libads.core.CollapsiblePositionType
 import com.libads.core.callback.AdLoadCallback
+import com.libads.core.callback.AdMediationInfo
 import com.libads.core.callback.AdRevenue
 import com.libads.core.callback.AdResult
 import com.libads.core.callback.AdShowCallback
@@ -224,8 +226,9 @@ class AdMobProvider : AdProvider {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob interstitial is not ready")
             return
         }
-        ad.fullScreenContentCallback = createFullScreenCallback(callback)
-        ad.onPaidEventListener = createPaidEventListener(callback)
+        val mediationInfo = ad.responseInfo.toAdMediationInfo()
+        ad.fullScreenContentCallback = createFullScreenCallback(callback, mediationInfo)
+        ad.onPaidEventListener = createPaidEventListener(callback, mediationInfo)
         ad.show(activity)
     }
 
@@ -235,8 +238,9 @@ class AdMobProvider : AdProvider {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob rewarded is not ready")
             return
         }
-        ad.fullScreenContentCallback = createFullScreenCallback(callback)
-        ad.onPaidEventListener = createPaidEventListener(callback)
+        val mediationInfo = ad.responseInfo.toAdMediationInfo()
+        ad.fullScreenContentCallback = createFullScreenCallback(callback, mediationInfo)
+        ad.onPaidEventListener = createPaidEventListener(callback, mediationInfo)
         ad.show(activity) { rewardItem ->
             callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
         }
@@ -248,8 +252,9 @@ class AdMobProvider : AdProvider {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob rewarded interstitial is not ready")
             return
         }
-        ad.fullScreenContentCallback = createFullScreenCallback(callback)
-        ad.onPaidEventListener = createPaidEventListener(callback)
+        val mediationInfo = ad.responseInfo.toAdMediationInfo()
+        ad.fullScreenContentCallback = createFullScreenCallback(callback, mediationInfo)
+        ad.onPaidEventListener = createPaidEventListener(callback, mediationInfo)
         ad.show(activity) { rewardItem ->
             callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
         }
@@ -266,16 +271,20 @@ class AdMobProvider : AdProvider {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob app open is not ready")
             return
         }
-        ad.fullScreenContentCallback = createFullScreenCallback(callback)
-        ad.onPaidEventListener = createPaidEventListener(callback)
+        val mediationInfo = ad.responseInfo.toAdMediationInfo()
+        ad.fullScreenContentCallback = createFullScreenCallback(callback, mediationInfo)
+        ad.onPaidEventListener = createPaidEventListener(callback, mediationInfo)
         ad.show(activity)
     }
 
-    private fun createFullScreenCallback(callback: AdShowCallback): FullScreenContentCallback {
+    private fun createFullScreenCallback(
+        callback: AdShowCallback,
+        mediationInfo: AdMediationInfo?
+    ): FullScreenContentCallback {
         return object : FullScreenContentCallback() {
             override fun onAdShowedFullScreenContent() = callback.onAdShown()
-            override fun onAdImpression() = callback.onAdImpression()
-            override fun onAdClicked() = callback.onAdClicked()
+            override fun onAdImpression() = callback.onAdImpression(mediationInfo)
+            override fun onAdClicked() = callback.onAdClicked(mediationInfo)
 
             override fun onAdDismissedFullScreenContent() {
                 callback.onAdDismissed()
@@ -319,7 +328,8 @@ class AdMobProvider : AdProvider {
             AdLogger.event(
                 adUnit,
                 AdEventType.PAID,
-                revenue = adValue.toAdRevenue()
+                revenue = adValue.toAdRevenue(),
+                mediationInfo = adView.responseInfo.toAdMediationInfo()
             )
         }
         adView.adListener = object : AdListener() {
@@ -341,11 +351,19 @@ class AdMobProvider : AdProvider {
             }
 
             override fun onAdImpression() {
-                AdLogger.event(adUnit, AdEventType.IMPRESSION)
+                AdLogger.event(
+                    adUnit,
+                    AdEventType.IMPRESSION,
+                    mediationInfo = adView.responseInfo.toAdMediationInfo()
+                )
             }
 
             override fun onAdClicked() {
-                AdLogger.event(adUnit, AdEventType.CLICKED)
+                AdLogger.event(
+                    adUnit,
+                    AdEventType.CLICKED,
+                    mediationInfo = adView.responseInfo.toAdMediationInfo()
+                )
             }
         }
 
@@ -355,6 +373,7 @@ class AdMobProvider : AdProvider {
 
     private fun renderNativeInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback) {
         val generation = beginLoad(adUnit)
+        var loadedNativeAd: NativeAd? = null
         val adLoader = AdLoader.Builder(container.context, adUnit.networkAdUnitId)
             .forNativeAd { nativeAd ->
                 if (!isCurrent(adUnit, generation)) {
@@ -368,12 +387,14 @@ class AdMobProvider : AdProvider {
                     callback.onResult(supersededResult(adUnit))
                     return@forNativeAd
                 }
+                loadedNativeAd = nativeAd
 
                 nativeAd.setOnPaidEventListener { adValue ->
                     AdLogger.event(
                         adUnit,
                         AdEventType.PAID,
-                        revenue = adValue.toAdRevenue()
+                        revenue = adValue.toAdRevenue(),
+                        mediationInfo = nativeAd.responseInfo.toAdMediationInfo()
                     )
                 }
 
@@ -396,11 +417,19 @@ class AdMobProvider : AdProvider {
                 }
 
                 override fun onAdImpression() {
-                    AdLogger.event(adUnit, AdEventType.IMPRESSION)
+                    AdLogger.event(
+                        adUnit,
+                        AdEventType.IMPRESSION,
+                        mediationInfo = loadedNativeAd?.responseInfo.toAdMediationInfo()
+                    )
                 }
 
                 override fun onAdClicked() {
-                    AdLogger.event(adUnit, AdEventType.CLICKED)
+                    AdLogger.event(
+                        adUnit,
+                        AdEventType.CLICKED,
+                        mediationInfo = loadedNativeAd?.responseInfo.toAdMediationInfo()
+                    )
                 }
             })
             .build()
@@ -734,8 +763,53 @@ class AdMobProvider : AdProvider {
 
     private fun requestKey(adUnit: AdUnit): String = "${adUnit.type}|${adUnit.id}"
 
-    private fun createPaidEventListener(callback: AdShowCallback): OnPaidEventListener {
-        return OnPaidEventListener { adValue -> callback.onPaidEvent(adValue.toAdRevenue()) }
+    private fun createPaidEventListener(
+        callback: AdShowCallback,
+        mediationInfo: AdMediationInfo?
+    ): OnPaidEventListener {
+        return OnPaidEventListener { adValue ->
+            callback.onPaidEvent(adValue.toAdRevenue(), mediationInfo)
+        }
+    }
+
+    private fun ResponseInfo?.toAdMediationInfo(): AdMediationInfo? {
+        val responseInfo = this ?: return null
+        val adapterInfo = responseInfo.loadedAdapterResponseInfo
+        val adapterClassName = adapterInfo?.adapterClassName
+            ?: responseInfo.mediationAdapterClassName
+        val adSourceName = adapterInfo?.adSourceName
+        if (adapterClassName.isNullOrBlank() && adSourceName.isNullOrBlank()) return null
+
+        return AdMediationInfo(
+            networkName = mediationNetworkName(adSourceName, adapterClassName),
+            adapterClassName = adapterClassName,
+            adSourceName = adSourceName,
+            adSourceId = adapterInfo?.adSourceId,
+            adSourceInstanceName = adapterInfo?.adSourceInstanceName,
+            adSourceInstanceId = adapterInfo?.adSourceInstanceId,
+            latencyMillis = adapterInfo?.latencyMillis
+        )
+    }
+
+    private fun mediationNetworkName(adSourceName: String?, adapterClassName: String?): String {
+        val identity = "$adSourceName $adapterClassName".lowercase()
+        return when {
+            "facebook" in identity || "meta" in identity || "audience" in identity -> "facebook"
+            "applovin" in identity -> "applovin"
+            "vungle" in identity || "liftoff" in identity -> "vungle"
+            "pangle" in identity || "bytedance" in identity -> "pangle"
+            "mintegral" in identity || "mbridge" in identity -> "mintegral"
+            "inmobi" in identity -> "inmobi"
+            "ironsource" in identity || "levelplay" in identity -> "ironsource"
+            "admob" in identity || "google" in identity -> "admob"
+            else -> adSourceName
+                ?.trim()
+                ?.lowercase()
+                ?.replace(Regex("[^a-z0-9]+"), "_")
+                ?.trim('_')
+                ?.takeIf { it.isNotEmpty() }
+                ?: "unknown"
+        }
     }
 
     private fun com.google.android.gms.ads.AdValue.toAdRevenue() = AdRevenue(

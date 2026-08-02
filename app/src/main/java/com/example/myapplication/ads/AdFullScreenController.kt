@@ -11,6 +11,7 @@ import com.example.myapplication.ui.dialog.DialogLoadingAds
 import com.libads.core.AdManager
 import com.libads.core.AdUnit
 import com.libads.core.callback.AdResult
+import com.libads.core.callback.AdMediationInfo
 import com.libads.core.callback.AdRevenue
 import com.libads.core.callback.AdShowCallback
 import java.util.concurrent.atomic.AtomicBoolean
@@ -175,16 +176,16 @@ internal object AdFullScreenController {
                 delegate.onAdShown()
             }
 
-            override fun onAdImpression() {
-                if (isActive()) delegate.onAdImpression()
+            override fun onAdImpression(mediationInfo: AdMediationInfo?) {
+                if (isActive()) delegate.onAdImpression(mediationInfo)
             }
 
-            override fun onAdClicked() {
-                if (isActive()) delegate.onAdClicked()
+            override fun onAdClicked(mediationInfo: AdMediationInfo?) {
+                if (isActive()) delegate.onAdClicked(mediationInfo)
             }
 
-            override fun onPaidEvent(revenue: AdRevenue) {
-                if (isActive()) delegate.onPaidEvent(revenue)
+            override fun onPaidEvent(revenue: AdRevenue, mediationInfo: AdMediationInfo?) {
+                if (isActive()) delegate.onPaidEvent(revenue, mediationInfo)
             }
 
             override fun onUserEarnedReward(amount: Int, type: String) {

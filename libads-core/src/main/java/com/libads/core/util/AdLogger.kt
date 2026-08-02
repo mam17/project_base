@@ -2,6 +2,7 @@ package com.libads.core.util
 
 import android.util.Log
 import com.libads.core.AdUnit
+import com.libads.core.callback.AdMediationInfo
 import com.libads.core.callback.AdRevenue
 
 /**
@@ -34,6 +35,7 @@ object AdLogger {
         errorCode: Int? = null,
         message: String? = null,
         revenue: AdRevenue? = null,
+        mediationInfo: AdMediationInfo? = null,
         rewardAmount: Int? = null,
         rewardType: String? = null
     ) {
@@ -43,6 +45,7 @@ object AdLogger {
             errorCode = errorCode,
             message = message,
             revenue = revenue,
+            mediationInfo = mediationInfo,
             rewardAmount = rewardAmount,
             rewardType = rewardType
         )
@@ -62,6 +65,13 @@ object AdLogger {
             append(" valueMicros=").append(it.valueMicros)
             append(" currency=").append(it.currencyCode)
             append(" precision=").append(it.precisionType)
+        }
+        mediationInfo?.let {
+            append(" network='").append(it.networkName).append("'")
+            it.adSourceName?.let { value -> append(" adSource='").append(value).append("'") }
+            it.adSourceInstanceName?.let { value -> append(" sourceInstance='").append(value).append("'") }
+            it.adapterClassName?.let { value -> append(" adapter='").append(value).append("'") }
+            it.latencyMillis?.let { value -> append(" latencyMs=").append(value) }
         }
         rewardAmount?.let { append(" rewardAmount=").append(it) }
         rewardType?.let { append(" rewardType='").append(it).append("'") }

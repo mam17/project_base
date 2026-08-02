@@ -92,6 +92,18 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${ad_app_id}" />
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" />
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token" />
+        <meta-data
+            android:name="com.tiktok.sdk.AppId"
+            android:value="@string/tiktok_app_id" />
+        <meta-data
+            android:name="com.appsflyer.FacebookApplicationId"
+            android:value="@string/facebook_app_id" />
     </application>
 
 </manifest>

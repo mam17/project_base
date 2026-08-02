@@ -2,6 +2,7 @@ package com.libads.core.util
 
 import com.libads.core.AdType
 import com.libads.core.AdUnit
+import com.libads.core.callback.AdMediationInfo
 import com.libads.core.callback.AdRevenue
 
 enum class AdEventType {
@@ -27,6 +28,7 @@ data class AdEvent(
     val errorCode: Int? = null,
     val message: String? = null,
     val revenue: AdRevenue? = null,
+    val mediationInfo: AdMediationInfo? = null,
     val rewardAmount: Int? = null,
     val rewardType: String? = null,
     val timestampMillis: Long = System.currentTimeMillis()
@@ -38,6 +40,7 @@ data class AdEvent(
             errorCode: Int? = null,
             message: String? = null,
             revenue: AdRevenue? = null,
+            mediationInfo: AdMediationInfo? = null,
             rewardAmount: Int? = null,
             rewardType: String? = null
         ) = AdEvent(
@@ -48,6 +51,7 @@ data class AdEvent(
             errorCode = errorCode,
             message = message,
             revenue = revenue,
+            mediationInfo = mediationInfo,
             rewardAmount = rewardAmount,
             rewardType = rewardType
         )

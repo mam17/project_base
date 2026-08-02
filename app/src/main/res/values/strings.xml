@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name" translatable="false">My Application</string>
 
+    <string name="facebook_app_id" translatable="false">1759477388554440</string>
+    <string name="facebook_client_token" translatable="false">57b82b690dc3ecb9941df5e3f50f84dd</string>
+    <string name="tiktok_app_id" translatable="false">7650516427983552532</string>
+    <string name="appsflyer_key" translatable="false">X6Kiaov2ZqhCk3fc7dGnCd</string>
+
     <string name="txt_english" translatable="false">English</string>
     <string name="txt_arabic" translatable="false">Arabic</string>
     <string name="txt_hindi" translatable="false">Hindi</string>
@@ -12,7 +17,6 @@
     <string name="txt_indonesian" translatable="false">Indonesian</string>
     <string name="txt_french" translatable="false">French</string>
     <string name="txt_vietnamese" translatable="false">Vietnamese</string>
-
 
     <string name="txt_select">Select</string>
     <string name="txt_cancel">Cancel</string>

@@ -31,6 +31,13 @@ android {
         versionCode = 1
         versionName = "1.0.1"
 
+        buildConfigField("String", "inter_test", "\"ca-app-pub-3940256099942544/1033173712\"")
+        buildConfigField("String", "native_test", "\"ca-app-pub-3940256099942544/2247696110\"")
+        buildConfigField("String", "reward_test", "\"ca-app-pub-3940256099942544/5224354917\"")
+        buildConfigField("String", "reward_inter_test", "\"ca-app-pub-3940256099942544/5354046379\"")
+        buildConfigField("String", "appopen_resume_test", "\"ca-app-pub-3940256099942544/9257395921\"")
+        buildConfigField("String", "banner_test", "\"ca-app-pub-3940256099942544/2014213617\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -62,13 +69,6 @@ android {
             )
 
             manifestPlaceholders["ad_app_id"] = "ca-app-pub-3940256099942544~3347511713"
-            buildConfigField("String", "inter_test", "\"ca-app-pub-3940256099942544/1033173712\"")
-            buildConfigField("String", "native_test", "\"ca-app-pub-3940256099942544/2247696110\"")
-            buildConfigField("String", "reward_test", "\"ca-app-pub-3940256099942544/5224354917\"")
-            buildConfigField("String", "reward_inter_test", "\"ca-app-pub-3940256099942544/5354046379\"")
-            buildConfigField("String", "appopen_resume_test", "\"ca-app-pub-3940256099942544/9257395921\"")
-            buildConfigField("String", "banner_test", "\"ca-app-pub-3940256099942544/2014213617\"")
-
         }
     }
     compileOptions {
@@ -170,24 +170,21 @@ dependencies {
     implementation(project(":libads-core"))
 
     //AdMob
-    implementation("com.google.android.gms:play-services-ads:24.7.0")
-
-    //Facebook SDK
-    implementation("com.facebook.android:facebook-android-sdk:18.1.3")
+    implementation("com.google.android.gms:play-services-ads:25.4.0")
 
     //mediation admob
-//    implementation("com.google.ads.mediation:facebook:6.20.0.0")
-//    implementation("com.google.ads.mediation:applovin:13.3.1.0")
-//    implementation("com.google.ads.mediation:vungle:7.5.0.0")
-//    implementation("com.google.ads.mediation:pangle:7.2.0.6.0")
-//    implementation("com.google.ads.mediation:mintegral:16.9.71.0")
-//    implementation("com.google.ads.mediation:inmobi:10.6.1.0")
-//    implementation("com.google.ads.mediation:ironsource:8.2.0.0")
+    implementation("com.google.ads.mediation:facebook:6.21.0.4")
+    implementation("com.google.ads.mediation:applovin:13.6.3.0")
+    implementation("com.google.ads.mediation:vungle:7.7.6.0")
+    implementation("com.google.ads.mediation:pangle:8.1.0.5.0")
+    implementation("com.google.ads.mediation:mintegral:17.1.61.1")
+    implementation("com.google.ads.mediation:inmobi:11.3.0.1")
+    implementation("com.google.ads.mediation:ironsource:9.5.0.0")
 //
-//    implementation("com.appsflyer:af-android-sdk:6.17.0")
-//    implementation("com.appsflyer:adrevenue:6.9.0")
-//    implementation("com.android.installreferrer:installreferrer:2.2")
-//    implementation("com.google.android.gms:play-services-appset:16.1.0")
+    // AppsFlyer MMP + install attribution helpers
+    implementation("com.appsflyer:af-android-sdk:7.0.0")
+    implementation("com.android.installreferrer:installreferrer:2.2")
+    implementation("com.google.android.gms:play-services-appset:16.1.0")
 //
 //    implementation("com.android.billingclient:billing-ktx:8.2.1")
 }

@@ -10,6 +10,7 @@ import com.libads.core.AdManager
 import com.libads.core.AdType
 import com.libads.core.AdUnit
 import com.libads.core.callback.AdLoadCallback
+import com.libads.core.callback.AdMediationInfo
 import com.libads.core.callback.AdRevenue
 import com.libads.core.callback.AdResult
 import com.libads.core.callback.AdShowCallback
@@ -266,19 +267,32 @@ internal class AdManagerImpl(application: Application) : AdManager {
                 delegate.onAdShown()
             }
 
-            override fun onAdImpression() {
-                AdLogger.event(adUnit, AdEventType.IMPRESSION)
-                delegate.onAdImpression()
+            override fun onAdImpression(mediationInfo: AdMediationInfo?) {
+                AdLogger.event(
+                    adUnit,
+                    AdEventType.IMPRESSION,
+                    mediationInfo = mediationInfo
+                )
+                delegate.onAdImpression(mediationInfo)
             }
 
-            override fun onAdClicked() {
-                AdLogger.event(adUnit, AdEventType.CLICKED)
-                delegate.onAdClicked()
+            override fun onAdClicked(mediationInfo: AdMediationInfo?) {
+                AdLogger.event(
+                    adUnit,
+                    AdEventType.CLICKED,
+                    mediationInfo = mediationInfo
+                )
+                delegate.onAdClicked(mediationInfo)
             }
 
-            override fun onPaidEvent(revenue: AdRevenue) {
-                AdLogger.event(adUnit, AdEventType.PAID, revenue = revenue)
-                delegate.onPaidEvent(revenue)
+            override fun onPaidEvent(revenue: AdRevenue, mediationInfo: AdMediationInfo?) {
+                AdLogger.event(
+                    adUnit,
+                    AdEventType.PAID,
+                    revenue = revenue,
+                    mediationInfo = mediationInfo
+                )
+                delegate.onPaidEvent(revenue, mediationInfo)
             }
 
             override fun onUserEarnedReward(amount: Int, type: String) {

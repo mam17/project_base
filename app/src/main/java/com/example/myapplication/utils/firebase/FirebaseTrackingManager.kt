@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.example.myapplication.MyApplication
+import com.libads.core.util.AdEvent
 
 class FirebaseTrackingManager private constructor() {
 
@@ -11,6 +12,7 @@ class FirebaseTrackingManager private constructor() {
         private const val TAG = "FirebaseTrackingManager"
         private const val MAX_EVENT_NAME_LENGTH = 40
         private const val EVENT_NAME_FALLBACK = "app_event"
+        private const val MICROS_PER_CURRENCY_UNIT = 1_000_000.0
 
         const val EVENT_NOTIFICATION_PUSH_SUCCESS = "notification_push_success"
         const val EVENT_NOTIFICATION_CLICK_OPEN_APP = "notification_click_open_app"
@@ -57,6 +59,37 @@ class FirebaseTrackingManager private constructor() {
 
     fun logEvent(key: String, params: Map<String, Any?>) {
         logEvent(key, params.toFirebaseBundle())
+    }
+
+    fun logAdEvent(event: AdEvent) {
+        val params = linkedMapOf<String, Any?>(
+            "ad_name" to event.adName,
+            "ad_type" to event.adType.name.lowercase(),
+            "ad_provider" to event.providerName,
+            "event_time_ms" to event.timestampMillis,
+            "error_code" to event.errorCode,
+            "error_message" to event.message,
+            "reward_amount" to event.rewardAmount,
+            "reward_type" to event.rewardType
+        )
+
+        event.revenue?.let { revenue ->
+            params["revenue_micros"] = revenue.valueMicros
+            params["value"] = revenue.valueMicros / MICROS_PER_CURRENCY_UNIT
+            params["currency"] = revenue.currencyCode
+            params["precision_type"] = revenue.precisionType
+        }
+        event.mediationInfo?.let { mediation ->
+            params["mediation_network"] = mediation.networkName
+            params["adapter_class"] = mediation.adapterClassName
+            params["ad_source_name"] = mediation.adSourceName
+            params["ad_source_id"] = mediation.adSourceId
+            params["ad_source_instance_name"] = mediation.adSourceInstanceName
+            params["ad_source_instance_id"] = mediation.adSourceInstanceId
+            params["mediation_latency_ms"] = mediation.latencyMillis
+        }
+
+        logEvent("libads_${event.eventType.name.lowercase()}", params)
     }
 
     private fun normalizeEventName(key: String): String {

@@ -12,12 +12,17 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.myapplication.ads.AdOpenResumeUtils
+import com.example.myapplication.ads.ConstantAds.APP_OPEN_SHOW_DELAY_MS
 import com.example.myapplication.utils.AppEx.setupAppShortcuts
 import com.example.myapplication.utils.firebase.FirebaseConfigManager
+import com.example.myapplication.utils.firebase.FirebaseTrackingManager
 import com.example.myapplication.utils.SpManager
 import com.example.myapplication.utils.notification.NotificationUtils
+import com.example.myapplication.utils.mmp.AppsFlyerMmpManager
 import com.libads.core.AdManager
 import com.libads.core.provider.admob.AdMobProvider
+import com.libads.core.util.AdEventListener
+import com.libads.core.util.AdLogger
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -39,6 +44,11 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
         super<Application>.onCreate()
         mInstance = this
         context = applicationContext
+        AppsFlyerMmpManager.initialize(this)
+        AdLogger.eventListener = AdEventListener { event ->
+            FirebaseTrackingManager.instance().logAdEvent(event)
+            AppsFlyerMmpManager.trackAdEvent(event)
+        }
         FirebaseConfigManager.instance().fetch()
         setupAppShortcuts(this)
         registerActivityLifecycleCallbacks(this)
@@ -99,7 +109,6 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
 
     companion object {
         private const val TAG = "TAG_MyApplication"
-        private const val APP_OPEN_SHOW_DELAY_MS = 300L
 
         @SuppressLint("StaticFieldLeak")
         var context: Context? = null
