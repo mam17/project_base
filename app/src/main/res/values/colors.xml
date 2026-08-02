@@ -10,5 +10,6 @@
     <color name="col_main">#00FF0B</color>
     <color name="col_purple">#A819EB</color>
     <color name="col_yellow">#FFBD00</color>
+    <color name="col_orange">#FF6F3F</color>
 
 </resources>

@@ -44,102 +44,162 @@ import com.libads.core.provider.AdProvider
 class AdMobProvider : AdProvider {
     override val name: String = PROVIDER_NAME
 
-    private val interstitialAds = mutableMapOf<String, InterstitialAd>()
-    private val rewardedAds = mutableMapOf<String, RewardedAd>()
-    private val rewardedInterstitialAds = mutableMapOf<String, RewardedInterstitialAd>()
-    private val bannerAds = mutableMapOf<String, AdView>()
-    private val appOpenAds = mutableMapOf<String, AppOpenAd>()
-    private val appOpenLoadTimes = mutableMapOf<String, Long>()
-    private val nativeAds = mutableMapOf<String, NativeAd>()
+    private enum class InitializationState {
+        NOT_STARTED,
+        INITIALIZING,
+        READY,
+        FAILED
+    }
+
+    private data class PendingInitializationAction(
+        val action: () -> Unit,
+        val onFailure: () -> Unit
+    )
+
+    private data class CachedAd<T>(
+        val networkAdUnitId: String,
+        val value: T,
+        val loadedAtMillis: Long = System.currentTimeMillis()
+    )
+
+    private val cacheLock = Any()
+    private val initializationLock = Any()
+    private var initializationState = InitializationState.NOT_STARTED
+    private val pendingInitializationActions = mutableListOf<PendingInitializationAction>()
+    private val loadGenerations = mutableMapOf<String, Long>()
+    private val interstitialAds = mutableMapOf<String, CachedAd<InterstitialAd>>()
+    private val rewardedAds = mutableMapOf<String, CachedAd<RewardedAd>>()
+    private val rewardedInterstitialAds = mutableMapOf<String, CachedAd<RewardedInterstitialAd>>()
+    private val bannerAds = mutableMapOf<String, CachedAd<AdView>>()
+    private val appOpenAds = mutableMapOf<String, CachedAd<AppOpenAd>>()
+    private val nativeAds = mutableMapOf<String, CachedAd<NativeAd>>()
 
     override fun initialize(context: Context, onInitialized: (success: Boolean) -> Unit) {
-        MobileAds.initialize(context) {
-            onInitialized(true)
-        }
+        runWhenInitialized(
+            context = context.applicationContext,
+            action = { onInitialized(true) },
+            onFailure = { onInitialized(false) }
+        )
     }
 
     override fun load(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
-        when (adUnit.type) {
-            AdType.INTERSTITIAL -> loadInterstitial(context, adUnit, callback)
-            AdType.REWARDED -> loadRewarded(context, adUnit, callback)
-            AdType.REWARDED_INTERSTITIAL -> loadRewardedInterstitial(context, adUnit, callback)
-            AdType.APP_OPEN -> loadAppOpen(context, adUnit, callback)
-            else -> callback.onResult(
-                AdResult.Failure(adUnit.id, ERROR_UNSUPPORTED, "Unsupported load type: ${adUnit.type}")
-            )
-        }
+        runWhenInitialized(
+            context = context.applicationContext,
+            action = {
+                when (adUnit.type) {
+                    AdType.INTERSTITIAL -> loadInterstitial(context, adUnit, callback)
+                    AdType.REWARDED -> loadRewarded(context, adUnit, callback)
+                    AdType.REWARDED_INTERSTITIAL -> loadRewardedInterstitial(context, adUnit, callback)
+                    AdType.APP_OPEN -> loadAppOpen(context, adUnit, callback)
+                    else -> callback.onResult(
+                        AdResult.Failure(adUnit.id, ERROR_UNSUPPORTED, "Unsupported load type: ${adUnit.type}")
+                    )
+                }
+            },
+            onFailure = {
+                callback.onResult(
+                    AdResult.Failure(adUnit.id, ERROR_INITIALIZATION, "AdMob initialization failed")
+                )
+            }
+        )
     }
 
     private fun loadInterstitial(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        val generation = beginLoad(adUnit)
         InterstitialAd.load(context, adUnit.networkAdUnitId, AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
-                    interstitialAds[adUnit.id] = ad
-                    callback.onResult(AdResult.Success(adUnit.id))
+                    if (storeIfCurrent(adUnit, generation, interstitialAds, ad)) {
+                        callback.onResult(AdResult.Success(adUnit.id))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
-                    interstitialAds.remove(adUnit.id)
-                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    if (removeIfCurrent(adUnit, generation, interstitialAds)) {
+                        callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
                 }
             })
     }
 
     private fun loadRewarded(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        val generation = beginLoad(adUnit)
         RewardedAd.load(context, adUnit.networkAdUnitId, AdRequest.Builder().build(),
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
-                    rewardedAds[adUnit.id] = ad
-                    callback.onResult(AdResult.Success(adUnit.id))
+                    if (storeIfCurrent(adUnit, generation, rewardedAds, ad)) {
+                        callback.onResult(AdResult.Success(adUnit.id))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
-                    rewardedAds.remove(adUnit.id)
-                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    if (removeIfCurrent(adUnit, generation, rewardedAds)) {
+                        callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
                 }
             })
     }
 
     private fun loadRewardedInterstitial(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        val generation = beginLoad(adUnit)
         RewardedInterstitialAd.load(context, adUnit.networkAdUnitId, AdRequest.Builder().build(),
             object : RewardedInterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedInterstitialAd) {
-                    rewardedInterstitialAds[adUnit.id] = ad
-                    callback.onResult(AdResult.Success(adUnit.id))
+                    if (storeIfCurrent(adUnit, generation, rewardedInterstitialAds, ad)) {
+                        callback.onResult(AdResult.Success(adUnit.id))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
-                    rewardedInterstitialAds.remove(adUnit.id)
-                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    if (removeIfCurrent(adUnit, generation, rewardedInterstitialAds)) {
+                        callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
                 }
             })
     }
 
     private fun loadAppOpen(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        val generation = beginLoad(adUnit)
         AppOpenAd.load(context, adUnit.networkAdUnitId, AdRequest.Builder().build(),
             object : AppOpenAd.AppOpenAdLoadCallback() {
                 override fun onAdLoaded(ad: AppOpenAd) {
-                    appOpenAds[adUnit.id] = ad
-                    appOpenLoadTimes[adUnit.id] = System.currentTimeMillis()
-                    callback.onResult(AdResult.Success(adUnit.id))
+                    if (storeIfCurrent(adUnit, generation, appOpenAds, ad)) {
+                        callback.onResult(AdResult.Success(adUnit.id))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
                 }
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
-                    appOpenAds.remove(adUnit.id)
-                    appOpenLoadTimes.remove(adUnit.id)
-                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    if (removeIfCurrent(adUnit, generation, appOpenAds)) {
+                        callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
                 }
             })
     }
 
     override fun isReady(adUnit: AdUnit): Boolean {
         return when (adUnit.type) {
-            AdType.INTERSTITIAL -> interstitialAds[adUnit.id] != null
-            AdType.REWARDED -> rewardedAds[adUnit.id] != null
-            AdType.REWARDED_INTERSTITIAL -> rewardedInterstitialAds[adUnit.id] != null
-            AdType.BANNER -> bannerAds[adUnit.id] != null
+            AdType.INTERSTITIAL -> isCachedFor(interstitialAds, adUnit)
+            AdType.REWARDED -> isCachedFor(rewardedAds, adUnit)
+            AdType.REWARDED_INTERSTITIAL -> isCachedFor(rewardedInterstitialAds, adUnit)
+            AdType.BANNER -> isCachedFor(bannerAds, adUnit)
             AdType.APP_OPEN -> isAppOpenReady(adUnit)
-            AdType.NATIVE -> nativeAds[adUnit.id] != null
+            AdType.NATIVE -> isCachedFor(nativeAds, adUnit)
             else -> false
         }
     }
@@ -155,86 +215,92 @@ class AdMobProvider : AdProvider {
     }
 
     private fun showInterstitial(activity: Activity, adUnit: AdUnit, callback: AdShowCallback) {
-        val ad = interstitialAds[adUnit.id]
+        val ad = takeCached(interstitialAds, adUnit)
         if (ad == null) {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob interstitial is not ready")
             return
         }
-        ad.fullScreenContentCallback = createFullScreenCallback(callback) { interstitialAds.remove(adUnit.id) }
+        ad.fullScreenContentCallback = createFullScreenCallback(callback)
         ad.show(activity)
     }
 
     private fun showRewarded(activity: Activity, adUnit: AdUnit, callback: AdShowCallback) {
-        val ad = rewardedAds[adUnit.id]
+        val ad = takeCached(rewardedAds, adUnit)
         if (ad == null) {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob rewarded is not ready")
             return
         }
-        ad.fullScreenContentCallback = createFullScreenCallback(callback) { rewardedAds.remove(adUnit.id) }
+        ad.fullScreenContentCallback = createFullScreenCallback(callback)
         ad.show(activity) { rewardItem ->
             callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
         }
     }
 
     private fun showRewardedInterstitial(activity: Activity, adUnit: AdUnit, callback: AdShowCallback) {
-        val ad = rewardedInterstitialAds[adUnit.id]
+        val ad = takeCached(rewardedInterstitialAds, adUnit)
         if (ad == null) {
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob rewarded interstitial is not ready")
             return
         }
-        ad.fullScreenContentCallback = createFullScreenCallback(callback) { rewardedInterstitialAds.remove(adUnit.id) }
+        ad.fullScreenContentCallback = createFullScreenCallback(callback)
         ad.show(activity) { rewardItem ->
             callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
         }
     }
 
     private fun showAppOpen(activity: Activity, adUnit: AdUnit, callback: AdShowCallback) {
-        val ad = appOpenAds[adUnit.id]
-        if (ad == null || !isAppOpenReady(adUnit)) {
-            appOpenAds.remove(adUnit.id)
-            appOpenLoadTimes.remove(adUnit.id)
+        if (!isAppOpenReady(adUnit)) {
+            synchronized(cacheLock) { appOpenAds.remove(adUnit.id) }
             callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob app open is not ready")
             return
         }
-        ad.fullScreenContentCallback = createFullScreenCallback(callback) {
-            appOpenAds.remove(adUnit.id)
-            appOpenLoadTimes.remove(adUnit.id)
+        val ad = takeCached(appOpenAds, adUnit)
+        if (ad == null) {
+            callback.onAdFailedToShow(ERROR_NOT_READY, "AdMob app open is not ready")
+            return
         }
+        ad.fullScreenContentCallback = createFullScreenCallback(callback)
         ad.show(activity)
     }
 
-    private fun createFullScreenCallback(
-        callback: AdShowCallback,
-        clear: () -> Unit
-    ): FullScreenContentCallback {
+    private fun createFullScreenCallback(callback: AdShowCallback): FullScreenContentCallback {
         return object : FullScreenContentCallback() {
             override fun onAdShowedFullScreenContent() = callback.onAdShown()
             override fun onAdClicked() = callback.onAdClicked()
 
             override fun onAdDismissedFullScreenContent() {
-                clear()
                 callback.onAdDismissed()
             }
 
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                clear()
                 callback.onAdFailedToShow(error.code, error.message)
             }
         }
     }
 
     override fun renderInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback) {
-        when (adUnit.type) {
-            AdType.BANNER -> renderBannerInto(container, adUnit, callback)
-            AdType.NATIVE -> renderNativeInto(container, adUnit, callback)
-            else -> callback.onResult(
-                AdResult.Failure(adUnit.id, ERROR_UNSUPPORTED, "Unsupported render type: ${adUnit.type}")
-            )
-        }
+        runWhenInitialized(
+            context = container.context.applicationContext,
+            action = {
+                when (adUnit.type) {
+                    AdType.BANNER -> renderBannerInto(container, adUnit, callback)
+                    AdType.NATIVE -> renderNativeInto(container, adUnit, callback)
+                    else -> callback.onResult(
+                        AdResult.Failure(adUnit.id, ERROR_UNSUPPORTED, "Unsupported render type: ${adUnit.type}")
+                    )
+                }
+            },
+            onFailure = {
+                callback.onResult(
+                    AdResult.Failure(adUnit.id, ERROR_INITIALIZATION, "AdMob initialization failed")
+                )
+            }
+        )
     }
 
     private fun renderBannerInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback) {
-        bannerAds.remove(adUnit.id)?.destroy()
+        val generation = beginLoad(adUnit)
+        synchronized(cacheLock) { bannerAds.remove(adUnit.id) }?.value?.destroy()
         container.removeAllViews()
 
         val adView = AdView(container.context)
@@ -242,13 +308,20 @@ class AdMobProvider : AdProvider {
         adView.setAdSize(getAnchoredAdaptiveBannerSize(container))
         adView.adListener = object : AdListener() {
             override fun onAdLoaded() {
-                bannerAds[adUnit.id] = adView
-                callback.onResult(AdResult.Success(adUnit.id))
+                if (storeIfCurrent(adUnit, generation, bannerAds, adView)) {
+                    callback.onResult(AdResult.Success(adUnit.id))
+                } else {
+                    adView.destroy()
+                    callback.onResult(supersededResult(adUnit))
+                }
             }
 
             override fun onAdFailedToLoad(error: LoadAdError) {
-                bannerAds.remove(adUnit.id)
-                callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                if (removeIfCurrent(adUnit, generation, bannerAds)) {
+                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                } else {
+                    callback.onResult(supersededResult(adUnit))
+                }
             }
         }
 
@@ -257,10 +330,20 @@ class AdMobProvider : AdProvider {
     }
 
     private fun renderNativeInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback) {
+        val generation = beginLoad(adUnit)
         val adLoader = AdLoader.Builder(container.context, adUnit.networkAdUnitId)
             .forNativeAd { nativeAd ->
-                nativeAds.remove(adUnit.id)?.destroy()
-                nativeAds[adUnit.id] = nativeAd
+                if (!isCurrent(adUnit, generation)) {
+                    nativeAd.destroy()
+                    callback.onResult(supersededResult(adUnit))
+                    return@forNativeAd
+                }
+                synchronized(cacheLock) { nativeAds.remove(adUnit.id) }?.value?.destroy()
+                if (!storeIfCurrent(adUnit, generation, nativeAds, nativeAd)) {
+                    nativeAd.destroy()
+                    callback.onResult(supersededResult(adUnit))
+                    return@forNativeAd
+                }
 
                 val nativeAdView = findNativeAdView(container) ?: createNativeAdView(container.context)
                 bindNativeAd(nativeAd, nativeAdView)
@@ -273,7 +356,11 @@ class AdMobProvider : AdProvider {
             }
             .withAdListener(object : AdListener() {
                 override fun onAdFailedToLoad(error: LoadAdError) {
-                    callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    if (removeIfCurrent(adUnit, generation, nativeAds)) {
+                        callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
                 }
             })
             .build()
@@ -453,20 +540,165 @@ class AdMobProvider : AdProvider {
     }
 
     override fun destroy(adUnit: AdUnit) {
-        interstitialAds.remove(adUnit.id)
-        rewardedAds.remove(adUnit.id)
-        rewardedInterstitialAds.remove(adUnit.id)
-        bannerAds.remove(adUnit.id)?.destroy()
-        appOpenAds.remove(adUnit.id)
-        appOpenLoadTimes.remove(adUnit.id)
-        nativeAds.remove(adUnit.id)?.destroy()
+        invalidateLoad(adUnit)
+        when (adUnit.type) {
+            AdType.INTERSTITIAL -> synchronized(cacheLock) { interstitialAds.remove(adUnit.id) }
+            AdType.REWARDED -> synchronized(cacheLock) { rewardedAds.remove(adUnit.id) }
+            AdType.REWARDED_INTERSTITIAL -> synchronized(cacheLock) {
+                rewardedInterstitialAds.remove(adUnit.id)
+            }
+            AdType.BANNER -> synchronized(cacheLock) { bannerAds.remove(adUnit.id) }?.value?.destroy()
+            AdType.APP_OPEN -> synchronized(cacheLock) { appOpenAds.remove(adUnit.id) }
+            AdType.NATIVE -> synchronized(cacheLock) { nativeAds.remove(adUnit.id) }?.value?.destroy()
+            else -> Unit
+        }
+    }
+
+    override fun destroyAll() {
+        val banners: List<AdView>
+        val natives: List<NativeAd>
+        synchronized(cacheLock) {
+            banners = bannerAds.values.map { it.value }
+            natives = nativeAds.values.map { it.value }
+            interstitialAds.clear()
+            rewardedAds.clear()
+            rewardedInterstitialAds.clear()
+            bannerAds.clear()
+            appOpenAds.clear()
+            nativeAds.clear()
+            loadGenerations.replaceAll { _, generation -> generation + 1L }
+        }
+        banners.forEach(AdView::destroy)
+        natives.forEach(NativeAd::destroy)
     }
 
     private fun isAppOpenReady(adUnit: AdUnit): Boolean {
-        val loadTime = appOpenLoadTimes[adUnit.id] ?: return false
-        val isFresh = System.currentTimeMillis() - loadTime < APP_OPEN_EXPIRATION_MS
-        return appOpenAds[adUnit.id] != null && isFresh
+        val cached = synchronized(cacheLock) { appOpenAds[adUnit.id] } ?: return false
+        if (cached.networkAdUnitId != adUnit.networkAdUnitId) {
+            synchronized(cacheLock) { appOpenAds.remove(adUnit.id) }
+            return false
+        }
+        return System.currentTimeMillis() - cached.loadedAtMillis < APP_OPEN_EXPIRATION_MS
     }
+
+    private fun runWhenInitialized(
+        context: Context,
+        action: () -> Unit,
+        onFailure: () -> Unit
+    ) {
+        var startInitialization = false
+        var runNow = false
+        var failNow = false
+        synchronized(initializationLock) {
+            when (initializationState) {
+                InitializationState.READY -> runNow = true
+                InitializationState.FAILED -> failNow = true
+                InitializationState.INITIALIZING -> {
+                    pendingInitializationActions += PendingInitializationAction(action, onFailure)
+                }
+                InitializationState.NOT_STARTED -> {
+                    initializationState = InitializationState.INITIALIZING
+                    pendingInitializationActions += PendingInitializationAction(action, onFailure)
+                    startInitialization = true
+                }
+            }
+        }
+
+        when {
+            runNow -> action()
+            failNow -> onFailure()
+            startInitialization -> startMobileAdsInitialization(context)
+        }
+    }
+
+    private fun startMobileAdsInitialization(context: Context) {
+        try {
+            MobileAds.initialize(context) {
+                val actions = synchronized(initializationLock) {
+                    initializationState = InitializationState.READY
+                    pendingInitializationActions.toList().also { pendingInitializationActions.clear() }
+                }
+                actions.forEach { it.action() }
+            }
+        } catch (throwable: Throwable) {
+            val actions = synchronized(initializationLock) {
+                initializationState = InitializationState.FAILED
+                pendingInitializationActions.toList().also { pendingInitializationActions.clear() }
+            }
+            actions.forEach { it.onFailure() }
+        }
+    }
+
+    private fun beginLoad(adUnit: AdUnit): Long = synchronized(cacheLock) {
+        val key = requestKey(adUnit)
+        val generation = (loadGenerations[key] ?: 0L) + 1L
+        loadGenerations[key] = generation
+        generation
+    }
+
+    private fun invalidateLoad(adUnit: AdUnit) {
+        synchronized(cacheLock) {
+            val key = requestKey(adUnit)
+            loadGenerations[key] = (loadGenerations[key] ?: 0L) + 1L
+        }
+    }
+
+    private fun isCurrent(adUnit: AdUnit, generation: Long): Boolean = synchronized(cacheLock) {
+        loadGenerations[requestKey(adUnit)] == generation
+    }
+
+    private fun <T> storeIfCurrent(
+        adUnit: AdUnit,
+        generation: Long,
+        target: MutableMap<String, CachedAd<T>>,
+        value: T
+    ): Boolean = synchronized(cacheLock) {
+        if (loadGenerations[requestKey(adUnit)] != generation) return@synchronized false
+        target[adUnit.id] = CachedAd(adUnit.networkAdUnitId, value)
+        true
+    }
+
+    private fun <T> removeIfCurrent(
+        adUnit: AdUnit,
+        generation: Long,
+        target: MutableMap<String, CachedAd<T>>
+    ): Boolean = synchronized(cacheLock) {
+        if (loadGenerations[requestKey(adUnit)] != generation) return@synchronized false
+        target.remove(adUnit.id)
+        true
+    }
+
+    private fun <T> isCachedFor(
+        target: MutableMap<String, CachedAd<T>>,
+        adUnit: AdUnit
+    ): Boolean = synchronized(cacheLock) {
+        val cached = target[adUnit.id] ?: return@synchronized false
+        if (cached.networkAdUnitId != adUnit.networkAdUnitId) {
+            target.remove(adUnit.id)
+            return@synchronized false
+        }
+        true
+    }
+
+    private fun <T> takeCached(
+        target: MutableMap<String, CachedAd<T>>,
+        adUnit: AdUnit
+    ): T? = synchronized(cacheLock) {
+        val cached = target[adUnit.id] ?: return@synchronized null
+        if (cached.networkAdUnitId != adUnit.networkAdUnitId) {
+            target.remove(adUnit.id)
+            return@synchronized null
+        }
+        target.remove(adUnit.id)?.value
+    }
+
+    private fun requestKey(adUnit: AdUnit): String = "${adUnit.type}|${adUnit.id}"
+
+    private fun supersededResult(adUnit: AdUnit): AdResult.Failure = AdResult.Failure(
+        adUnitId = adUnit.id,
+        errorCode = ERROR_REQUEST_SUPERSEDED,
+        message = "Ad request was superseded by a newer request"
+    )
 
     private fun dp(context: Context, value: Int): Int {
         return (value * context.resources.displayMetrics.density).toInt()
@@ -478,5 +710,7 @@ class AdMobProvider : AdProvider {
         private const val APP_OPEN_EXPIRATION_MS = 4 * 60 * 60 * 1000L
         private const val ERROR_NOT_READY = -10
         private const val ERROR_UNSUPPORTED = -11
+        private const val ERROR_REQUEST_SUPERSEDED = -12
+        private const val ERROR_INITIALIZATION = -13
     }
 }

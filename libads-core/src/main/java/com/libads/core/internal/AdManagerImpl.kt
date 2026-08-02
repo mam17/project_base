@@ -3,6 +3,9 @@ package com.libads.core.internal
 import android.app.Activity
 import android.app.Application
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.libads.core.AdManager
 import com.libads.core.AdType
 import com.libads.core.AdUnit
@@ -16,112 +19,174 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration.Companion.milliseconds
 
-internal class AdManagerImpl(
-    application: Application
-) : AdManager {
+internal class AdManagerImpl(application: Application) : AdManager {
 
-    // WeakReference để không leak Application dù thực tế Application sống cả vòng đời app
-    private val appRef = WeakReference(application)
-
-    // Scope riêng cho lib, Main dispatcher vì hầu hết callback ads SDK trả về trên main thread
+    private val appContext = application.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-
-    private val providers = mutableMapOf<String, AdProvider>()
+    private val providers = ConcurrentHashMap<String, AdProvider>()
     private val cache = AdCache()
+    private val knownAdUnits = ConcurrentHashMap<PlacementKey, AdUnit>()
+    private val showingFullScreenPlacement = AtomicReference<PlacementKey?>(null)
 
     override fun registerProvider(provider: AdProvider) {
-        if (providers.containsKey(provider.name)) {
-            AdLogger.w("Provider '${provider.name}' đã được đăng ký trước đó, bỏ qua.")
+        if (providers.putIfAbsent(provider.name, provider) != null) {
+            AdLogger.w("Provider '${provider.name}' is already registered")
             return
         }
-        providers[provider.name] = provider
-        appRef.get()?.let { app ->
-            provider.initialize(app) { success ->
-                AdLogger.d("Provider '${provider.name}' initialize success=$success")
-            }
+        provider.initialize(appContext) { success ->
+            AdLogger.d("Provider '${provider.name}' initialize success=$success")
         }
-    }
-
-    private fun providerOf(adUnit: AdUnit): AdProvider? {
-        val provider = providers[adUnit.providerName]
-        if (provider == null) {
-            AdLogger.e("Không tìm thấy provider '${adUnit.providerName}' cho adUnit '${adUnit.id}'. Bạn đã registerProvider() chưa?")
-        }
-        return provider
     }
 
     override fun preload(adUnit: AdUnit, callback: AdLoadCallback?) {
         val provider = providerOf(adUnit) ?: run {
-            callback?.onResult(AdResult.Failure(adUnit.id, ERROR_NO_PROVIDER, "Provider not registered"))
+            callback?.onResult(noProviderResult(adUnit))
             return
         }
-        val context = appRef.get() ?: return
+        prepareAdUnit(provider, adUnit)
 
         if (provider.isReady(adUnit)) {
             callback?.onResult(AdResult.Success(adUnit.id))
             return
         }
-        if (cache.isLoading(adUnit.id)) {
-            AdLogger.d("AdUnit '${adUnit.id}' đang load rồi, bỏ qua request trùng.")
-            cache.addCallback(adUnit.id, callback)
+
+        val registration = cache.register(adUnit, callback)
+        if (registration is AdCache.Registration.Joined) {
+            AdLogger.d("AdUnit '${adUnit.id}' is already loading; callback joined")
             return
         }
 
-        cache.markLoading(adUnit.id)
-        cache.addCallback(adUnit.id, callback)
+        val requestId = (registration as AdCache.Registration.Started).requestId
         scope.launch {
             val result = withTimeoutOrNull(adUnit.timeoutMillis.milliseconds) {
-                awaitLoad(provider, context.applicationContext, adUnit)
+                awaitLoad(provider, adUnit)
             } ?: AdResult.TimedOut(adUnit.id)
 
-            cache.markIdle(adUnit.id)
             if (result is AdResult.TimedOut) {
-                AdLogger.w("AdUnit '${adUnit.id}' load timeout sau ${adUnit.timeoutMillis}ms")
+                provider.destroy(adUnit)
+                AdLogger.w("AdUnit '${adUnit.id}' load timed out after ${adUnit.timeoutMillis}ms")
             }
-            cache.dispatchCallbacks(adUnit.id, result)
+            cache.complete(adUnit, requestId, result)
         }
     }
 
-    private suspend fun awaitLoad(
-        provider: AdProvider,
-        context: android.content.Context,
-        adUnit: AdUnit
-    ): AdResult = kotlinx.coroutines.suspendCancellableCoroutine { cont ->
-        provider.load(context, adUnit) { result ->
-            if (cont.isActive) cont.resumeWith(Result.success(result))
-        }
-    }
+    override fun isLoading(adUnit: AdUnit): Boolean = cache.isLoading(adUnit)
 
     override fun isReady(adUnit: AdUnit): Boolean {
-        return providerOf(adUnit)?.isReady(adUnit) ?: false
+        val provider = providerOf(adUnit) ?: return false
+        prepareAdUnit(provider, adUnit)
+        return provider.isReady(adUnit)
     }
 
     override fun show(activity: Activity, adUnit: AdUnit, callback: AdShowCallback?) {
+        scope.launch {
+            showInternal(activity, activity as? LifecycleOwner, adUnit, callback)
+        }
+    }
+
+    override fun show(fragment: Fragment, adUnit: AdUnit, callback: AdShowCallback?) {
+        val activity = fragment.activity
+        if (activity == null) {
+            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached to an Activity")
+            return
+        }
+        scope.launch { showInternal(activity, fragment, adUnit, callback) }
+    }
+
+    override fun loadAndShow(activity: Activity, adUnit: AdUnit, callback: AdShowCallback?) {
+        scope.launch {
+            loadAndShowInternal(activity, activity as? LifecycleOwner, adUnit, callback)
+        }
+    }
+
+    override fun loadAndShow(fragment: Fragment, adUnit: AdUnit, callback: AdShowCallback?) {
+        val activity = fragment.activity
+        if (activity == null) {
+            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached to an Activity")
+            return
+        }
+        scope.launch { loadAndShowInternal(activity, fragment, adUnit, callback) }
+    }
+
+    override fun renderInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback?) {
+        val provider = providerOf(adUnit) ?: run {
+            callback?.onResult(noProviderResult(adUnit))
+            return
+        }
+        prepareAdUnit(provider, adUnit)
+        provider.renderInto(container, adUnit, callback ?: NoopLoadCallback)
+    }
+
+    override fun destroy(adUnit: AdUnit) {
+        val registered = knownAdUnits.remove(PlacementKey.from(adUnit)) ?: adUnit
+        providers[registered.providerName]?.destroy(registered)
+        cache.cancel(
+            registered,
+            AdResult.Failure(registered.id, ERROR_DESTROYED, "Ad placement was destroyed")
+        )
+    }
+
+    override fun destroyAll() {
+        cache.clearAll { key ->
+            AdResult.Failure(key.adName, ERROR_DESTROYED, "AdManager was destroyed")
+        }
+        providers.values.forEach(AdProvider::destroyAll)
+        knownAdUnits.clear()
+        showingFullScreenPlacement.set(null)
+    }
+
+    private fun showInternal(
+        activity: Activity,
+        lifecycleOwner: LifecycleOwner?,
+        adUnit: AdUnit,
+        callback: AdShowCallback?
+    ) {
+        if (!adUnit.type.supportsFullScreenShow()) {
+            callback?.onAdFailedToShow(ERROR_UNSUPPORTED_TYPE, "show only supports full-screen ads")
+            return
+        }
+        if (!canShowFrom(activity, lifecycleOwner)) {
+            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
+            return
+        }
+        if (showingFullScreenPlacement.get() != null) {
+            callback?.onAdFailedToShow(ERROR_AD_ALREADY_SHOWING, "Another full-screen ad is showing")
+            return
+        }
+
         val provider = providerOf(adUnit) ?: run {
             callback?.onAdFailedToShow(ERROR_NO_PROVIDER, "Provider not registered")
             return
         }
-
+        prepareAdUnit(provider, adUnit)
         if (provider.isReady(adUnit)) {
-            provider.show(activity, adUnit, callback ?: NoopShowCallback)
+            performShow(activity, lifecycleOwner, provider, adUnit, callback)
             return
         }
 
-        // Chưa sẵn sàng: tự load rồi show, có timeout để không treo user vô thời hạn
-        AdLogger.d("AdUnit '${adUnit.id}' chưa ready, tự load trước khi show.")
+        AdLogger.d("AdUnit '${adUnit.id}' is not ready; loading before show")
         preload(adUnit) { result ->
             when (result) {
-                is AdResult.Success -> provider.show(activity, adUnit, callback ?: NoopShowCallback)
+                is AdResult.Success -> scope.launch {
+                    performShow(activity, lifecycleOwner, provider, adUnit, callback)
+                }
                 is AdResult.Failure -> callback?.onAdFailedToShow(result.errorCode, result.message)
                 is AdResult.TimedOut -> callback?.onAdFailedToShow(ERROR_TIMEOUT, "Ad load timed out")
             }
         }
     }
 
-    override fun loadAndShow(activity: Activity, adUnit: AdUnit, callback: AdShowCallback?) {
+    private fun loadAndShowInternal(
+        activity: Activity,
+        lifecycleOwner: LifecycleOwner?,
+        adUnit: AdUnit,
+        callback: AdShowCallback?
+    ) {
         if (!adUnit.type.supportsLoadAndShow()) {
             callback?.onAdFailedToShow(
                 ERROR_UNSUPPORTED_TYPE,
@@ -129,51 +194,163 @@ internal class AdManagerImpl(
             )
             return
         }
+        if (!canShowFrom(activity, lifecycleOwner)) {
+            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
+            return
+        }
 
         val provider = providerOf(adUnit) ?: run {
             callback?.onAdFailedToShow(ERROR_NO_PROVIDER, "Provider not registered")
             return
         }
-
+        prepareAdUnit(provider, adUnit)
         provider.destroy(adUnit)
-        cache.clear(adUnit.id)
-        AdLogger.d("AdUnit '${adUnit.id}' loadAndShow: force load before show.")
+        cache.cancel(
+            adUnit,
+            AdResult.Failure(adUnit.id, ERROR_REQUEST_SUPERSEDED, "Replaced by loadAndShow")
+        )
+
         preload(adUnit) { result ->
             when (result) {
-                is AdResult.Success -> provider.show(activity, adUnit, callback ?: NoopShowCallback)
+                is AdResult.Success -> scope.launch {
+                    performShow(activity, lifecycleOwner, provider, adUnit, callback)
+                }
                 is AdResult.Failure -> callback?.onAdFailedToShow(result.errorCode, result.message)
                 is AdResult.TimedOut -> callback?.onAdFailedToShow(ERROR_TIMEOUT, "Ad load timed out")
             }
         }
     }
 
-    override fun renderInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback?) {
-        val provider = providerOf(adUnit) ?: run {
-            callback?.onResult(AdResult.Failure(adUnit.id, ERROR_NO_PROVIDER, "Provider not registered"))
+    private fun performShow(
+        activity: Activity,
+        lifecycleOwner: LifecycleOwner?,
+        provider: AdProvider,
+        adUnit: AdUnit,
+        callback: AdShowCallback?
+    ) {
+        if (!canShowFrom(activity, lifecycleOwner)) {
+            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
             return
         }
-        provider.renderInto(container, adUnit, callback ?: NoopLoadCallback)
+        if (!provider.isReady(adUnit)) {
+            callback?.onAdFailedToShow(ERROR_NOT_READY, "Ad '${adUnit.id}' is not ready")
+            return
+        }
+
+        val placement = PlacementKey.from(adUnit)
+        if (!showingFullScreenPlacement.compareAndSet(null, placement)) {
+            callback?.onAdFailedToShow(ERROR_AD_ALREADY_SHOWING, "Another full-screen ad is showing")
+            return
+        }
+
+        val delegate = callback ?: NoopShowCallback
+        val completed = AtomicBoolean(false)
+        val guardedCallback = object : AdShowCallback {
+            override fun onAdShown() = delegate.onAdShown()
+            override fun onAdClicked() = delegate.onAdClicked()
+
+            override fun onUserEarnedReward(amount: Int, type: String) {
+                delegate.onUserEarnedReward(amount, type)
+            }
+
+            override fun onAdDismissed() {
+                if (!completed.compareAndSet(false, true)) return
+                showingFullScreenPlacement.compareAndSet(placement, null)
+                try {
+                    delegate.onAdDismissed()
+                } finally {
+                    replenishAfterConsumption(adUnit)
+                }
+            }
+
+            override fun onAdFailedToShow(errorCode: Int, message: String) {
+                if (!completed.compareAndSet(false, true)) return
+                showingFullScreenPlacement.compareAndSet(placement, null)
+                try {
+                    delegate.onAdFailedToShow(errorCode, message)
+                } finally {
+                    replenishAfterConsumption(adUnit)
+                }
+            }
+        }
+
+        try {
+            provider.show(activity, adUnit, guardedCallback)
+        } catch (throwable: Throwable) {
+            guardedCallback.onAdFailedToShow(
+                ERROR_SHOW_EXCEPTION,
+                throwable.message ?: "Provider threw while showing the ad"
+            )
+        }
     }
 
-    override fun destroy(adUnit: AdUnit) {
-        providers[adUnit.providerName]?.destroy(adUnit)
-        cache.clear(adUnit.id)
+    private fun replenishAfterConsumption(adUnit: AdUnit) {
+        if (adUnit.cacheEnabled) preload(adUnit)
     }
 
-    override fun destroyAll() {
-        cache.clearAll()
+    private fun canShowFrom(activity: Activity, lifecycleOwner: LifecycleOwner?): Boolean {
+        if (activity.isFinishing || activity.isDestroyed) return false
+        return lifecycleOwner?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) ?: true
     }
 
-    private fun AdType.supportsLoadAndShow(): Boolean {
-        return this == AdType.INTERSTITIAL ||
+    private fun prepareAdUnit(provider: AdProvider, adUnit: AdUnit) {
+        val placement = PlacementKey.from(adUnit)
+        var previous: AdUnit? = null
+        knownAdUnits.compute(placement) { _, current ->
+            previous = current
+            adUnit
+        }
+        val oldUnit = previous ?: return
+        if (AdKey.from(oldUnit) == AdKey.from(adUnit)) return
+
+        cache.cancel(
+            oldUnit,
+            AdResult.Failure(oldUnit.id, ERROR_CONFIG_CHANGED, "Ad configuration changed")
+        )
+        provider.destroy(oldUnit)
+        AdLogger.d("AdUnit '${adUnit.id}' network id changed; stale cache invalidated")
+    }
+
+    private suspend fun awaitLoad(provider: AdProvider, adUnit: AdUnit): AdResult =
+        kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+            provider.load(appContext, adUnit) { result ->
+                if (continuation.isActive) continuation.resumeWith(Result.success(result))
+            }
+        }
+
+    private fun providerOf(adUnit: AdUnit): AdProvider? {
+        val provider = providers[adUnit.providerName]
+        if (provider == null) {
+            AdLogger.e("Provider '${adUnit.providerName}' is not registered for '${adUnit.id}'")
+        }
+        return provider
+    }
+
+    private fun noProviderResult(adUnit: AdUnit) = AdResult.Failure(
+        adUnit.id,
+        ERROR_NO_PROVIDER,
+        "Provider not registered"
+    )
+
+    private fun AdType.supportsLoadAndShow(): Boolean =
+        this == AdType.INTERSTITIAL ||
             this == AdType.REWARDED ||
             this == AdType.REWARDED_INTERSTITIAL
-    }
+
+    private fun AdType.supportsFullScreenShow(): Boolean =
+        supportsLoadAndShow() || this == AdType.APP_OPEN
 
     private companion object {
         const val ERROR_NO_PROVIDER = -1
         const val ERROR_TIMEOUT = -2
         const val ERROR_UNSUPPORTED_TYPE = -3
+        const val ERROR_NOT_READY = -4
+        const val ERROR_INVALID_HOST = -5
+        const val ERROR_AD_ALREADY_SHOWING = -6
+        const val ERROR_REQUEST_SUPERSEDED = -7
+        const val ERROR_CONFIG_CHANGED = -8
+        const val ERROR_SHOW_EXCEPTION = -9
+        const val ERROR_DESTROYED = -10
 
         val NoopLoadCallback = AdLoadCallback { }
         val NoopShowCallback = object : AdShowCallback {}

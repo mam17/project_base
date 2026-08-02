@@ -1,50 +1,83 @@
 package com.libads.core.internal
 
+import com.libads.core.AdUnit
 import com.libads.core.callback.AdLoadCallback
 import com.libads.core.callback.AdResult
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
-/**
- * Theo dõi trạng thái load theo từng adUnit.id để:
- * - Không gọi load() nhiều lần chồng nhau cho cùng 1 placement
- * - Biết placement nào đang loading / đã sẵn sàng
- *
- * Việc ad thực sự có sẵn hay không vẫn hỏi qua AdProvider.isReady(),
- * cache này chỉ chống race-condition khi gọi load liên tục (ví dụ user bấm nút nhiều lần).
- */
 internal class AdCache {
 
-    private val loadingState = ConcurrentHashMap<String, Boolean>()
-    private val pendingCallbacks = ConcurrentHashMap<String, MutableList<AdLoadCallback>>()
-
-    fun isLoading(adUnitId: String): Boolean = loadingState[adUnitId] == true
-
-    fun markLoading(adUnitId: String) {
-        loadingState[adUnitId] = true
+    sealed interface Registration {
+        data class Started(val requestId: Long) : Registration
+        data object Joined : Registration
     }
 
-    fun markIdle(adUnitId: String) {
-        loadingState[adUnitId] = false
+    private data class LoadingRequest(
+        val requestId: Long,
+        val callbacks: MutableList<AdLoadCallback>
+    )
+
+    private val lock = Any()
+    private val nextRequestId = AtomicLong(0L)
+    private val loadingRequests = mutableMapOf<AdKey, LoadingRequest>()
+
+    fun register(adUnit: AdUnit, callback: AdLoadCallback? = null): Registration {
+        val key = AdKey.from(adUnit)
+        synchronized(lock) {
+            val current = loadingRequests[key]
+            if (current != null) {
+                callback?.let(current.callbacks::add)
+                return Registration.Joined
+            }
+
+            val request = LoadingRequest(
+                requestId = nextRequestId.incrementAndGet(),
+                callbacks = mutableListOf<AdLoadCallback>().apply {
+                    callback?.let(::add)
+                }
+            )
+            loadingRequests[key] = request
+            return Registration.Started(request.requestId)
+        }
     }
 
-    fun clear(adUnitId: String) {
-        loadingState.remove(adUnitId)
-        pendingCallbacks.remove(adUnitId)
+    fun isLoading(adUnit: AdUnit): Boolean = synchronized(lock) {
+        loadingRequests.containsKey(AdKey.from(adUnit))
     }
 
-    fun clearAll() {
-        loadingState.clear()
-        pendingCallbacks.clear()
+    fun complete(adUnit: AdUnit, requestId: Long, result: AdResult) {
+        val callbacks = synchronized(lock) {
+            val key = AdKey.from(adUnit)
+            val current = loadingRequests[key]
+            if (current?.requestId != requestId) return
+            loadingRequests.remove(key)
+            current.callbacks.toList()
+        }
+        callbacks.forEach { callback -> callback.onResult(result) }
     }
 
-    fun addCallback(adUnitId: String, callback: AdLoadCallback?) {
-        if (callback == null) return
-        pendingCallbacks.getOrPut(adUnitId) { mutableListOf() }.add(callback)
+    fun cancel(adUnit: AdUnit, result: AdResult? = null) {
+        val callbacks = synchronized(lock) {
+            loadingRequests.remove(AdKey.from(adUnit))?.callbacks?.toList().orEmpty()
+        }
+        if (result != null) callbacks.forEach { callback -> callback.onResult(result) }
     }
 
-    fun dispatchCallbacks(adUnitId: String, result: AdResult) {
-        pendingCallbacks.remove(adUnitId)?.forEach { callback ->
-            callback.onResult(result)
+    fun clear(adUnit: AdUnit) {
+        cancel(adUnit)
+    }
+
+    fun clearAll(resultFactory: ((AdKey) -> AdResult)? = null) {
+        val pending = synchronized(lock) {
+            val snapshot = loadingRequests.map { (key, request) -> key to request.callbacks.toList() }
+            loadingRequests.clear()
+            snapshot
+        }
+        if (resultFactory != null) {
+            pending.forEach { (key, callbacks) ->
+                val result = resultFactory(key)
+                callbacks.forEach { callback -> callback.onResult(result) }
+            }
         }
     }
 }

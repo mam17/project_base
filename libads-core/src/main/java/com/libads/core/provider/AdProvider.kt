@@ -37,4 +37,7 @@ interface AdProvider {
 
     /** Giải phóng tài nguyên ad đã load (tránh leak khi Activity/Fragment destroy) */
     fun destroy(adUnit: AdUnit)
+
+    /** Giải phóng toàn bộ cache và vô hiệu hóa các request đang chờ callback. */
+    fun destroyAll() {}
 }

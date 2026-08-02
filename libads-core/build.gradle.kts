@@ -39,6 +39,7 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.18.0")
+    api("androidx.fragment:fragment:1.6.2")
     implementation("androidx.lifecycle:lifecycle-common:2.10.0")
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")

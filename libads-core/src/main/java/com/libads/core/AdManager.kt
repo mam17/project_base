@@ -3,6 +3,7 @@ package com.libads.core
 import android.app.Activity
 import android.app.Application
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import com.libads.core.callback.AdLoadCallback
 import com.libads.core.callback.AdShowCallback
 import com.libads.core.provider.AdProvider
@@ -28,13 +29,19 @@ interface AdManager {
     /** Preload/cache sẵn quảng cáo cho 1 placement, không show ngay. */
     fun preload(adUnit: AdUnit, callback: AdLoadCallback? = null)
 
+    fun isLoading(adUnit: AdUnit): Boolean
+
     /** Kiểm tra quảng cáo đã sẵn sàng để show chưa (đã cache/preload thành công) */
     fun isReady(adUnit: AdUnit): Boolean
 
     /** Show quảng cáo full-screen. Tự load nếu chưa cache, có timeout an toàn. */
     fun show(activity: Activity, adUnit: AdUnit, callback: AdShowCallback? = null)
 
+    fun show(fragment: Fragment, adUnit: AdUnit, callback: AdShowCallback? = null)
+
     fun loadAndShow(activity: Activity, adUnit: AdUnit, callback: AdShowCallback? = null)
+
+    fun loadAndShow(fragment: Fragment, adUnit: AdUnit, callback: AdShowCallback? = null)
 
     /** Render banner/native ad vào 1 container trong layout */
     fun renderInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback? = null)
