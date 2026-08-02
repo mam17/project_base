@@ -14,6 +14,7 @@ import com.example.myapplication.ui.main.MainActivity
 import com.example.myapplication.ui.uninstall.UninstallActivity
 import com.example.myapplication.utils.Constant
 import com.example.myapplication.utils.DialogEx.showDialogAlert
+import com.example.myapplication.utils.firebase.FirebaseTrackingManager
 import com.example.myapplication.utils.NetworkUtil
 import com.example.myapplication.utils.PermissionUtils
 import com.example.myapplication.utils.notification.NotificationUtils
@@ -75,9 +76,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
         }
 
         Log.i("TAG_SPLASH", "trackNotificationOpen: EVENT_NOTIFICATION_CLICK_OPEN_APP")
-//        FirebaseTrackingManager.instance().logEvent(
-//            FirebaseTrackingManager.EVENT_NOTIFICATION_CLICK_OPEN_APP
-//        )
+        FirebaseTrackingManager.instance().logEvent(FirebaseTrackingManager.EVENT_NOTIFICATION_CLICK_OPEN_APP)
         intent.removeExtra(NotificationUtils.EXTRA_OPEN_FROM_NOTIFICATION)
     }
 
@@ -133,6 +132,5 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
     companion object {
         private const val TAG = "TAG_SPLASH"
         private const val SPLASH_MIN_DURATION_MS = 1_500L
-        private const val REMOTE_CONFIG_TIMEOUT_MS = 4_000L
     }
 }

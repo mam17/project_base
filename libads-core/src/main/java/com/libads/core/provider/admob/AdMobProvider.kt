@@ -23,6 +23,7 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
@@ -37,9 +38,12 @@ import com.libads.core.AdType
 import com.libads.core.AdUnit
 import com.libads.core.CollapsiblePositionType
 import com.libads.core.callback.AdLoadCallback
+import com.libads.core.callback.AdRevenue
 import com.libads.core.callback.AdResult
 import com.libads.core.callback.AdShowCallback
 import com.libads.core.provider.AdProvider
+import com.libads.core.util.AdEventType
+import com.libads.core.util.AdLogger
 
 class AdMobProvider : AdProvider {
     override val name: String = PROVIDER_NAME
@@ -221,6 +225,7 @@ class AdMobProvider : AdProvider {
             return
         }
         ad.fullScreenContentCallback = createFullScreenCallback(callback)
+        ad.onPaidEventListener = createPaidEventListener(callback)
         ad.show(activity)
     }
 
@@ -231,6 +236,7 @@ class AdMobProvider : AdProvider {
             return
         }
         ad.fullScreenContentCallback = createFullScreenCallback(callback)
+        ad.onPaidEventListener = createPaidEventListener(callback)
         ad.show(activity) { rewardItem ->
             callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
         }
@@ -243,6 +249,7 @@ class AdMobProvider : AdProvider {
             return
         }
         ad.fullScreenContentCallback = createFullScreenCallback(callback)
+        ad.onPaidEventListener = createPaidEventListener(callback)
         ad.show(activity) { rewardItem ->
             callback.onUserEarnedReward(rewardItem.amount, rewardItem.type)
         }
@@ -260,12 +267,14 @@ class AdMobProvider : AdProvider {
             return
         }
         ad.fullScreenContentCallback = createFullScreenCallback(callback)
+        ad.onPaidEventListener = createPaidEventListener(callback)
         ad.show(activity)
     }
 
     private fun createFullScreenCallback(callback: AdShowCallback): FullScreenContentCallback {
         return object : FullScreenContentCallback() {
             override fun onAdShowedFullScreenContent() = callback.onAdShown()
+            override fun onAdImpression() = callback.onAdImpression()
             override fun onAdClicked() = callback.onAdClicked()
 
             override fun onAdDismissedFullScreenContent() {
@@ -306,6 +315,13 @@ class AdMobProvider : AdProvider {
         val adView = AdView(container.context)
         adView.adUnitId = adUnit.networkAdUnitId
         adView.setAdSize(getAnchoredAdaptiveBannerSize(container))
+        adView.onPaidEventListener = OnPaidEventListener { adValue ->
+            AdLogger.event(
+                adUnit,
+                AdEventType.PAID,
+                revenue = adValue.toAdRevenue()
+            )
+        }
         adView.adListener = object : AdListener() {
             override fun onAdLoaded() {
                 if (storeIfCurrent(adUnit, generation, bannerAds, adView)) {
@@ -322,6 +338,14 @@ class AdMobProvider : AdProvider {
                 } else {
                     callback.onResult(supersededResult(adUnit))
                 }
+            }
+
+            override fun onAdImpression() {
+                AdLogger.event(adUnit, AdEventType.IMPRESSION)
+            }
+
+            override fun onAdClicked() {
+                AdLogger.event(adUnit, AdEventType.CLICKED)
             }
         }
 
@@ -345,6 +369,14 @@ class AdMobProvider : AdProvider {
                     return@forNativeAd
                 }
 
+                nativeAd.setOnPaidEventListener { adValue ->
+                    AdLogger.event(
+                        adUnit,
+                        AdEventType.PAID,
+                        revenue = adValue.toAdRevenue()
+                    )
+                }
+
                 val nativeAdView = findNativeAdView(container) ?: createNativeAdView(container.context)
                 bindNativeAd(nativeAd, nativeAdView)
 
@@ -361,6 +393,14 @@ class AdMobProvider : AdProvider {
                     } else {
                         callback.onResult(supersededResult(adUnit))
                     }
+                }
+
+                override fun onAdImpression() {
+                    AdLogger.event(adUnit, AdEventType.IMPRESSION)
+                }
+
+                override fun onAdClicked() {
+                    AdLogger.event(adUnit, AdEventType.CLICKED)
                 }
             })
             .build()
@@ -693,6 +733,16 @@ class AdMobProvider : AdProvider {
     }
 
     private fun requestKey(adUnit: AdUnit): String = "${adUnit.type}|${adUnit.id}"
+
+    private fun createPaidEventListener(callback: AdShowCallback): OnPaidEventListener {
+        return OnPaidEventListener { adValue -> callback.onPaidEvent(adValue.toAdRevenue()) }
+    }
+
+    private fun com.google.android.gms.ads.AdValue.toAdRevenue() = AdRevenue(
+        valueMicros = valueMicros,
+        currencyCode = currencyCode,
+        precisionType = precisionType
+    )
 
     private fun supersededResult(adUnit: AdUnit): AdResult.Failure = AdResult.Failure(
         adUnitId = adUnit.id,

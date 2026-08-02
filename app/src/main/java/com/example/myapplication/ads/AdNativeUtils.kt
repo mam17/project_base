@@ -8,9 +8,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.example.myapplication.R
+import com.libads.core.AdManager
+import com.libads.core.callback.AdLoadCallback
 import com.libads.core.callback.AdResult
 
-object NativeAdUtils {
+object AdNativeUtils {
     private const val ONE_SECOND_MS = 1_000L
 
     fun showNative(
@@ -24,7 +26,7 @@ object NativeAdUtils {
             .inflate(loadingLayoutRes, nativeContainer, false)
         nativeContainer.addView(loadingView)
 
-        AdMobAds.showNative(nativeContainer) { result ->
+        renderNative(nativeContainer) { result ->
             if (result is AdResult.Failure) {
                 nativeContainer.removeAllViews()
                 onFailure?.invoke(result.message)
@@ -57,7 +59,7 @@ object NativeAdUtils {
             onClose()
         }
 
-        AdMobAds.showNative(nativeContainer) { result ->
+        renderNative(nativeContainer) { result ->
             when (result) {
                 is AdResult.Success -> {
                     loadingContainer.visibility = View.GONE
@@ -87,5 +89,12 @@ object NativeAdUtils {
                 closeButton.visibility = View.VISIBLE
             }
         }.start()
+    }
+
+    private fun renderNative(
+        container: ViewGroup,
+        callback: AdLoadCallback
+    ) {
+        AdManager.getInstance().renderInto(container, AdUnits.mainNative, callback)
     }
 }

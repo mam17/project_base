@@ -1,36 +1,16 @@
 package com.example.myapplication.ads
 
 import android.util.Log
-import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.libads.core.AdManager
-import com.libads.core.CollapsiblePositionType
-import com.libads.core.callback.AdLoadCallback
 import com.libads.core.callback.AdResult
 import com.libads.core.callback.AdShowCallback
 
-object AdMobAds {
-    private const val TAG = "AdMobAds"
+object AdOpenResumeUtils {
+    private const val TAG = "AdOpenResumeUtils"
     private var isShowingAppOpen = false
     private var isLoadingAppOpen = false
-
-    fun showBanner(
-        container: ViewGroup,
-        collapsiblePositionType: CollapsiblePositionType = CollapsiblePositionType.NONE,
-        callback: AdLoadCallback? = null
-    ) {
-        val adUnit = AdUnits.mainBanner.copy(
-            collapsiblePositionType = collapsiblePositionType
-        )
-        AdManager.getInstance().renderInto(container, adUnit, callback)
-    }
-
-    fun showNative(
-        container: ViewGroup,
-        callback: AdLoadCallback? = null
-    ) {
-        AdManager.getInstance().renderInto(container, AdUnits.mainNative, callback)
-    }
 
     fun preloadAppOpenResume() {
         if (isLoadingAppOpen || AdManager.getInstance().isReady(AdUnits.appOpenResume)) return
@@ -41,13 +21,29 @@ object AdMobAds {
             isLoadingAppOpen = false
             when (result) {
                 is AdResult.Success -> Log.d(TAG, "preloadAppOpenResume: loaded")
-                is AdResult.Failure -> Log.e(TAG, "preloadAppOpenResume: failed ${result.errorCode} ${result.message}")
+                is AdResult.Failure -> Log.e(
+                    TAG,
+                    "preloadAppOpenResume: failed ${result.errorCode} ${result.message}"
+                )
                 is AdResult.TimedOut -> Log.w(TAG, "preloadAppOpenResume: timed out")
             }
         }
     }
 
     fun showAppOpenResume(activity: FragmentActivity) {
+        showAppOpenResume { callback ->
+            AdManager.getInstance().show(activity, AdUnits.appOpenResume, callback)
+        }
+    }
+
+    fun showAppOpenResume(fragment: Fragment) {
+        if (!fragment.isAdded) return
+        showAppOpenResume { callback ->
+            AdManager.getInstance().show(fragment, AdUnits.appOpenResume, callback)
+        }
+    }
+
+    private fun showAppOpenResume(showAction: (AdShowCallback) -> Unit) {
         if (isShowingAppOpen) return
 
         if (!AdManager.getInstance().isReady(AdUnits.appOpenResume)) {
@@ -58,7 +54,7 @@ object AdMobAds {
 
         isShowingAppOpen = true
         Log.d(TAG, "showAppOpenResume: show")
-        AdManager.getInstance().show(activity, AdUnits.appOpenResume, object : AdShowCallback {
+        showAction(object : AdShowCallback {
             override fun onAdShown() {
                 Log.d(TAG, "showAppOpenResume: shown")
             }

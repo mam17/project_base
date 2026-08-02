@@ -10,10 +10,12 @@ import com.libads.core.AdManager
 import com.libads.core.AdType
 import com.libads.core.AdUnit
 import com.libads.core.callback.AdLoadCallback
+import com.libads.core.callback.AdRevenue
 import com.libads.core.callback.AdResult
 import com.libads.core.callback.AdShowCallback
 import com.libads.core.provider.AdProvider
 import com.libads.core.util.AdLogger
+import com.libads.core.util.AdEventType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -45,7 +47,9 @@ internal class AdManagerImpl(application: Application) : AdManager {
 
     override fun preload(adUnit: AdUnit, callback: AdLoadCallback?) {
         val provider = providerOf(adUnit) ?: run {
-            callback?.onResult(noProviderResult(adUnit))
+            val result = noProviderResult(adUnit)
+            logLoadResult(adUnit, result)
+            callback?.onResult(result)
             return
         }
         prepareAdUnit(provider, adUnit)
@@ -62,6 +66,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
         }
 
         val requestId = (registration as AdCache.Registration.Started).requestId
+        AdLogger.event(adUnit, AdEventType.LOAD_STARTED)
         scope.launch {
             val result = withTimeoutOrNull(adUnit.timeoutMillis.milliseconds) {
                 awaitLoad(provider, adUnit)
@@ -71,7 +76,9 @@ internal class AdManagerImpl(application: Application) : AdManager {
                 provider.destroy(adUnit)
                 AdLogger.w("AdUnit '${adUnit.id}' load timed out after ${adUnit.timeoutMillis}ms")
             }
-            cache.complete(adUnit, requestId, result)
+            if (cache.complete(adUnit, requestId, result)) {
+                logLoadResult(adUnit, result)
+            }
         }
     }
 
@@ -92,7 +99,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
     override fun show(fragment: Fragment, adUnit: AdUnit, callback: AdShowCallback?) {
         val activity = fragment.activity
         if (activity == null) {
-            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached to an Activity")
+            notifyShowFailed(adUnit, callback, ERROR_INVALID_HOST, "Fragment is not attached to an Activity")
             return
         }
         scope.launch { showInternal(activity, fragment, adUnit, callback) }
@@ -107,7 +114,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
     override fun loadAndShow(fragment: Fragment, adUnit: AdUnit, callback: AdShowCallback?) {
         val activity = fragment.activity
         if (activity == null) {
-            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached to an Activity")
+            notifyShowFailed(adUnit, callback, ERROR_INVALID_HOST, "Fragment is not attached to an Activity")
             return
         }
         scope.launch { loadAndShowInternal(activity, fragment, adUnit, callback) }
@@ -115,11 +122,17 @@ internal class AdManagerImpl(application: Application) : AdManager {
 
     override fun renderInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback?) {
         val provider = providerOf(adUnit) ?: run {
-            callback?.onResult(noProviderResult(adUnit))
+            val result = noProviderResult(adUnit)
+            logLoadResult(adUnit, result)
+            callback?.onResult(result)
             return
         }
         prepareAdUnit(provider, adUnit)
-        provider.renderInto(container, adUnit, callback ?: NoopLoadCallback)
+        AdLogger.event(adUnit, AdEventType.LOAD_STARTED)
+        provider.renderInto(container, adUnit) { result ->
+            logLoadResult(adUnit, result)
+            (callback ?: NoopLoadCallback).onResult(result)
+        }
     }
 
     override fun destroy(adUnit: AdUnit) {
@@ -147,20 +160,20 @@ internal class AdManagerImpl(application: Application) : AdManager {
         callback: AdShowCallback?
     ) {
         if (!adUnit.type.supportsFullScreenShow()) {
-            callback?.onAdFailedToShow(ERROR_UNSUPPORTED_TYPE, "show only supports full-screen ads")
+            notifyShowFailed(adUnit, callback, ERROR_UNSUPPORTED_TYPE, "show only supports full-screen ads")
             return
         }
         if (!canShowFrom(activity, lifecycleOwner)) {
-            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
+            notifyShowFailed(adUnit, callback, ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
             return
         }
         if (showingFullScreenPlacement.get() != null) {
-            callback?.onAdFailedToShow(ERROR_AD_ALREADY_SHOWING, "Another full-screen ad is showing")
+            notifyShowFailed(adUnit, callback, ERROR_AD_ALREADY_SHOWING, "Another full-screen ad is showing")
             return
         }
 
         val provider = providerOf(adUnit) ?: run {
-            callback?.onAdFailedToShow(ERROR_NO_PROVIDER, "Provider not registered")
+            notifyShowFailed(adUnit, callback, ERROR_NO_PROVIDER, "Provider not registered")
             return
         }
         prepareAdUnit(provider, adUnit)
@@ -175,8 +188,8 @@ internal class AdManagerImpl(application: Application) : AdManager {
                 is AdResult.Success -> scope.launch {
                     performShow(activity, lifecycleOwner, provider, adUnit, callback)
                 }
-                is AdResult.Failure -> callback?.onAdFailedToShow(result.errorCode, result.message)
-                is AdResult.TimedOut -> callback?.onAdFailedToShow(ERROR_TIMEOUT, "Ad load timed out")
+                is AdResult.Failure -> notifyShowFailed(adUnit, callback, result.errorCode, result.message)
+                is AdResult.TimedOut -> notifyShowFailed(adUnit, callback, ERROR_TIMEOUT, "Ad load timed out")
             }
         }
     }
@@ -188,19 +201,21 @@ internal class AdManagerImpl(application: Application) : AdManager {
         callback: AdShowCallback?
     ) {
         if (!adUnit.type.supportsLoadAndShow()) {
-            callback?.onAdFailedToShow(
+            notifyShowFailed(
+                adUnit,
+                callback,
                 ERROR_UNSUPPORTED_TYPE,
                 "loadAndShow only supports interstitial and rewarded ads"
             )
             return
         }
         if (!canShowFrom(activity, lifecycleOwner)) {
-            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
+            notifyShowFailed(adUnit, callback, ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
             return
         }
 
         val provider = providerOf(adUnit) ?: run {
-            callback?.onAdFailedToShow(ERROR_NO_PROVIDER, "Provider not registered")
+            notifyShowFailed(adUnit, callback, ERROR_NO_PROVIDER, "Provider not registered")
             return
         }
         prepareAdUnit(provider, adUnit)
@@ -215,8 +230,8 @@ internal class AdManagerImpl(application: Application) : AdManager {
                 is AdResult.Success -> scope.launch {
                     performShow(activity, lifecycleOwner, provider, adUnit, callback)
                 }
-                is AdResult.Failure -> callback?.onAdFailedToShow(result.errorCode, result.message)
-                is AdResult.TimedOut -> callback?.onAdFailedToShow(ERROR_TIMEOUT, "Ad load timed out")
+                is AdResult.Failure -> notifyShowFailed(adUnit, callback, result.errorCode, result.message)
+                is AdResult.TimedOut -> notifyShowFailed(adUnit, callback, ERROR_TIMEOUT, "Ad load timed out")
             }
         }
     }
@@ -229,33 +244,57 @@ internal class AdManagerImpl(application: Application) : AdManager {
         callback: AdShowCallback?
     ) {
         if (!canShowFrom(activity, lifecycleOwner)) {
-            callback?.onAdFailedToShow(ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
+            notifyShowFailed(adUnit, callback, ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
             return
         }
         if (!provider.isReady(adUnit)) {
-            callback?.onAdFailedToShow(ERROR_NOT_READY, "Ad '${adUnit.id}' is not ready")
+            notifyShowFailed(adUnit, callback, ERROR_NOT_READY, "Ad '${adUnit.id}' is not ready")
             return
         }
 
         val placement = PlacementKey.from(adUnit)
         if (!showingFullScreenPlacement.compareAndSet(null, placement)) {
-            callback?.onAdFailedToShow(ERROR_AD_ALREADY_SHOWING, "Another full-screen ad is showing")
+            notifyShowFailed(adUnit, callback, ERROR_AD_ALREADY_SHOWING, "Another full-screen ad is showing")
             return
         }
 
         val delegate = callback ?: NoopShowCallback
         val completed = AtomicBoolean(false)
         val guardedCallback = object : AdShowCallback {
-            override fun onAdShown() = delegate.onAdShown()
-            override fun onAdClicked() = delegate.onAdClicked()
+            override fun onAdShown() {
+                AdLogger.event(adUnit, AdEventType.SHOWN)
+                delegate.onAdShown()
+            }
+
+            override fun onAdImpression() {
+                AdLogger.event(adUnit, AdEventType.IMPRESSION)
+                delegate.onAdImpression()
+            }
+
+            override fun onAdClicked() {
+                AdLogger.event(adUnit, AdEventType.CLICKED)
+                delegate.onAdClicked()
+            }
+
+            override fun onPaidEvent(revenue: AdRevenue) {
+                AdLogger.event(adUnit, AdEventType.PAID, revenue = revenue)
+                delegate.onPaidEvent(revenue)
+            }
 
             override fun onUserEarnedReward(amount: Int, type: String) {
+                AdLogger.event(
+                    adUnit,
+                    AdEventType.REWARD_EARNED,
+                    rewardAmount = amount,
+                    rewardType = type
+                )
                 delegate.onUserEarnedReward(amount, type)
             }
 
             override fun onAdDismissed() {
                 if (!completed.compareAndSet(false, true)) return
                 showingFullScreenPlacement.compareAndSet(placement, null)
+                AdLogger.event(adUnit, AdEventType.DISMISSED)
                 try {
                     delegate.onAdDismissed()
                 } finally {
@@ -266,6 +305,12 @@ internal class AdManagerImpl(application: Application) : AdManager {
             override fun onAdFailedToShow(errorCode: Int, message: String) {
                 if (!completed.compareAndSet(false, true)) return
                 showingFullScreenPlacement.compareAndSet(placement, null)
+                AdLogger.event(
+                    adUnit,
+                    AdEventType.SHOW_FAILED,
+                    errorCode = errorCode,
+                    message = message
+                )
                 try {
                     delegate.onAdFailedToShow(errorCode, message)
                 } finally {
@@ -275,6 +320,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
         }
 
         try {
+            AdLogger.event(adUnit, AdEventType.SHOW_STARTED)
             provider.show(activity, adUnit, guardedCallback)
         } catch (throwable: Throwable) {
             guardedCallback.onAdFailedToShow(
@@ -331,6 +377,34 @@ internal class AdManagerImpl(application: Application) : AdManager {
         ERROR_NO_PROVIDER,
         "Provider not registered"
     )
+
+    private fun logLoadResult(adUnit: AdUnit, result: AdResult) {
+        when (result) {
+            is AdResult.Success -> AdLogger.event(adUnit, AdEventType.LOADED)
+            is AdResult.Failure -> AdLogger.event(
+                adUnit,
+                AdEventType.LOAD_FAILED,
+                errorCode = result.errorCode,
+                message = result.message
+            )
+            is AdResult.TimedOut -> AdLogger.event(adUnit, AdEventType.LOAD_TIMED_OUT)
+        }
+    }
+
+    private fun notifyShowFailed(
+        adUnit: AdUnit,
+        callback: AdShowCallback?,
+        errorCode: Int,
+        message: String
+    ) {
+        AdLogger.event(
+            adUnit,
+            AdEventType.SHOW_FAILED,
+            errorCode = errorCode,
+            message = message
+        )
+        callback?.onAdFailedToShow(errorCode, message)
+    }
 
     private fun AdType.supportsLoadAndShow(): Boolean =
         this == AdType.INTERSTITIAL ||

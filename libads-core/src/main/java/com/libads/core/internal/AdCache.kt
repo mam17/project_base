@@ -45,15 +45,16 @@ internal class AdCache {
         loadingRequests.containsKey(AdKey.from(adUnit))
     }
 
-    fun complete(adUnit: AdUnit, requestId: Long, result: AdResult) {
+    fun complete(adUnit: AdUnit, requestId: Long, result: AdResult): Boolean {
         val callbacks = synchronized(lock) {
             val key = AdKey.from(adUnit)
             val current = loadingRequests[key]
-            if (current?.requestId != requestId) return
+            if (current?.requestId != requestId) return false
             loadingRequests.remove(key)
             current.callbacks.toList()
         }
         callbacks.forEach { callback -> callback.onResult(result) }
+        return true
     }
 
     fun cancel(adUnit: AdUnit, result: AdResult? = null) {

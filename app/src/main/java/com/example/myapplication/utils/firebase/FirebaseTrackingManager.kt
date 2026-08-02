@@ -1,4 +1,4 @@
-package com.example.myapplication.utils
+package com.example.myapplication.utils.firebase
 
 import android.os.Bundle
 import android.util.Log

@@ -3,24 +3,22 @@ package com.example.myapplication.ui.main
 import android.os.CountDownTimer
 import android.view.View
 import com.example.myapplication.R
-import com.example.myapplication.ads.AdMobAds
-import com.example.myapplication.ads.AdUnits
-import com.example.myapplication.ads.FullScreenAdUtils
-import com.example.myapplication.ads.NativeAdUtils
+import com.example.myapplication.ads.AdBannerUtils
+import com.example.myapplication.ads.AdInterstitialUtils
+import com.example.myapplication.ads.AdNativeUtils
+import com.example.myapplication.ads.AdOpenResumeUtils
+import com.example.myapplication.ads.AdRewardUtils
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.ui.alertfull.NotificationFSUtil
 import com.example.myapplication.ui.alertfull.NotificationFSUtil.scheduleFullScreenNotificationDiary
 import com.example.myapplication.ui.alertfull.PermissionFragment
-import com.example.myapplication.ui.dialog.DialogLoadingAds
 import com.example.myapplication.ui.language.LanguageActivity
 import com.example.myapplication.utils.DialogEx.showDialogAlert
 import com.example.myapplication.utils.PermissionUtils
 import com.example.myapplication.utils.notification.NotificationUtils
-import com.libads.core.AdManager
 import com.libads.core.CollapsiblePositionType
 import com.libads.core.callback.AdResult
-import com.libads.core.callback.AdShowCallback
 
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -63,10 +61,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     override fun initData() {
-        AdMobAds.preloadAppOpenResume()
-        AdManager.getInstance().preload(AdUnits.mainInterstitial)
-        AdManager.getInstance().preload(AdUnits.mainRewarded)
-        AdManager.getInstance().preload(AdUnits.mainRewardedInterstitial)
+        AdOpenResumeUtils.preloadAppOpenResume()
+        AdInterstitialUtils.preload()
+        AdRewardUtils.preloadRewarded()
+        AdRewardUtils.preloadRewardedInterstitial()
         showNative()
     }
 
@@ -108,7 +106,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun showInterstitial() {
-        FullScreenAdUtils.showInterstitial(
+        AdInterstitialUtils.show(
             activity = this,
             onDismissed = { showToast("Interstitial dismissed") },
             onFailed = { message -> showToast("Interstitial failed: $message") }
@@ -116,7 +114,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun showRewarded() {
-        FullScreenAdUtils.showRewarded(
+        AdRewardUtils.showRewarded(
             activity = this,
             onRewardEarned = { amount, type -> showToast("Reward earned: $amount $type") },
             onDismissed = { showToast("Rewarded dismissed") },
@@ -125,78 +123,41 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun loadAndShowInterstitial() {
-        loadAndShowWithLoading(
-            adUnit = AdUnits.mainInterstitial,
-            adName = "LoadAndShow interstitial",
-            rewardPrefix = null
+        AdInterstitialUtils.loadAndShow(
+            activity = this,
+            onDismissed = { showToast("LoadAndShow interstitial dismissed") },
+            onFailed = { message -> showToast("LoadAndShow interstitial failed: $message") }
         )
     }
 
     private fun loadAndShowRewarded() {
-        loadAndShowWithLoading(
-            adUnit = AdUnits.mainRewarded,
-            adName = "LoadAndShow rewarded",
-            rewardPrefix = "Reward earned"
+        AdRewardUtils.loadAndShowRewarded(
+            activity = this,
+            onRewardEarned = { amount, type -> showToast("Reward earned: $amount $type") },
+            onDismissed = { showToast("LoadAndShow rewarded dismissed") },
+            onFailed = { message -> showToast("LoadAndShow rewarded failed: $message") }
         )
     }
 
     private fun loadAndShowRewardedInterstitial() {
-        loadAndShowWithLoading(
-            adUnit = AdUnits.mainRewardedInterstitial,
-            adName = "Rewarded interstitial",
-            rewardPrefix = "Rewarded interstitial earned"
-        )
-    }
-
-    private fun loadAndShowWithLoading(
-        adUnit: com.libads.core.AdUnit,
-        adName: String,
-        rewardPrefix: String?
-    ) {
-        val loadingDialog = DialogLoadingAds(this)
-        loadingDialog.show()
-        AdManager.getInstance().loadAndShow(
+        AdRewardUtils.loadAndShowRewardedInterstitial(
             activity = this,
-            adUnit = adUnit,
-            callback = createLoadAndShowCallback(
-                adName = adName,
-                rewardPrefix = rewardPrefix,
-                loadingDialog = loadingDialog
-            )
+            onRewardEarned = { amount, type ->
+                showToast("Rewarded interstitial earned: $amount $type")
+            },
+            onDismissed = { showToast("Rewarded interstitial dismissed") },
+            onFailed = { message -> showToast("Rewarded interstitial failed: $message") }
         )
-    }
-
-    private fun createLoadAndShowCallback(
-        adName: String,
-        rewardPrefix: String?,
-        loadingDialog: DialogLoadingAds
-    ): AdShowCallback {
-        return object : AdShowCallback {
-            override fun onAdShown() {
-                loadingDialog.dismiss()
-            }
-
-            override fun onUserEarnedReward(amount: Int, type: String) {
-                rewardPrefix?.let { showToast("$it: $amount $type") }
-            }
-
-            override fun onAdDismissed() {
-                loadingDialog.dismiss()
-                showToast("$adName dismissed")
-            }
-
-            override fun onAdFailedToShow(errorCode: Int, message: String) {
-                loadingDialog.dismiss()
-                showToast("$adName failed: $message")
-            }
-        }
     }
 
     private fun showBanner() {
         binding.frBannerAds.shimmerBanner.visibility = View.VISIBLE
         binding.frBannerAds.shimmerBanner.startShimmer()
         binding.frBannerAds.bannerContainer.post {
-            AdMobAds.showBanner(binding.frBannerAds.bannerContainer, CollapsiblePositionType.BOTTOM) { result ->
+            AdBannerUtils.showBanner(
+                binding.frBannerAds.bannerContainer,
+                CollapsiblePositionType.BOTTOM
+            ) { result ->
                 binding.frBannerAds.shimmerBanner.stopShimmer()
                 binding.frBannerAds.shimmerBanner.visibility = View.GONE
                 if (result is AdResult.Failure) {
@@ -207,7 +168,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun showNative() {
-        NativeAdUtils.showNative(
+        AdNativeUtils.showNative(
             context = this,
             nativeContainer = binding.frNative,
             onFailure = { message -> showToast("Native failed: $message") }
@@ -215,7 +176,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun showInterstitialThenNativeTimeout() {
-        FullScreenAdUtils.showInterstitial(
+        AdInterstitialUtils.show(
             activity = this,
             onDismissed = { showNativeTimeout() },
             onFailed = { showNativeTimeout() }
@@ -224,7 +185,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
     private fun showNativeTimeout() {
         nativeCloseTimer?.cancel()
-        nativeCloseTimer = NativeAdUtils.showNativeWithCountdown(
+        nativeCloseTimer = AdNativeUtils.showNativeWithCountdown(
             rootView = binding.frNativeTimeOut.root,
             nativeContainer = binding.frNativeTimeOut.nativeFullContainer,
             loadingContainer = binding.frNativeTimeOut.nativeFullLoadingContainer,

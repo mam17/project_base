@@ -17,15 +17,35 @@ fun interface AdLoadCallback {
     fun onResult(result: AdResult)
 }
 
+interface TwoFloorAdLoadCallback : AdLoadCallback {
+    fun onTwoFloorAdSelected(
+        placementId: String,
+        loadedAdUnitId: String,
+        loadedNetworkAdUnitId: String,
+        isFallback: Boolean
+    ) {}
+}
+
 /**
  * Callback vòng đời khi hiển thị quảng cáo (interstitial, rewarded...).
  * Tách riêng khỏi load callback vì show có nhiều event hơn.
  */
 interface AdShowCallback {
     fun onAdShown() {}
+    fun onAdImpression() {}
     fun onAdClicked() {}
+    fun onPaidEvent(revenue: AdRevenue) {}
     fun onAdDismissed() {}
     fun onAdFailedToShow(errorCode: Int, message: String) {}
     /** Chỉ áp dụng cho REWARDED / REWARDED_INTERSTITIAL */
     fun onUserEarnedReward(amount: Int, type: String) {}
+}
+
+interface TwoFloorAdShowCallback : AdShowCallback {
+    fun onTwoFloorAdSelected(
+        placementId: String,
+        loadedAdUnitId: String,
+        loadedNetworkAdUnitId: String,
+        isFallback: Boolean
+    ) {}
 }

@@ -18,10 +18,9 @@ import androidx.work.WorkManager
 import com.example.myapplication.R
 import com.example.myapplication.receiver.OnboardingReminderReceiver
 import com.example.myapplication.ui.splash.SplashActivity
-import com.example.myapplication.utils.FirebaseTrackingManager
+import com.example.myapplication.utils.firebase.FirebaseTrackingManager
 import com.example.myapplication.utils.PermissionUtils
 import com.example.myapplication.utils.SpManager
-import com.example.myapplication.domain.layer.NotificationContentModel
 import com.example.myapplication.works.NotificationReminderWorker
 
 object NotificationUtils {

@@ -1,0 +1,82 @@
+{
+  "banner_splash_first": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/1237866525",
+    "id_2f": ""
+  },
+  "inter_splash_first": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/2724162411",
+    "id_2f": "ca-app-pub-1458302844590844/1411080749"
+  },
+  "native_fs_splash_first": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/7036189356",
+    "id_2f": "ca-app-pub-1458302844590844/1147356862"
+  },
+  "native_language_first_1": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/9798882823",
+    "id_2f": ""
+  },
+  "native_language_first_2": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/7147869996",
+    "id_2f": "ca-app-pub-1458302844590844/1703971627"
+  },
+  "native_ob_first_1": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/1400719298",
+    "id_2f": "ca-app-pub-1458302844590844/9630563106"
+  },
+  "native_fs_first_1": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/7774555956",
+    "id_2f": "ca-app-pub-1458302844590844/5148392618"
+  },
+  "native_fs_first_2": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/2522229275",
+    "id_2f": "ca-app-pub-1458302844590844/2167804819"
+  },
+  "native_ob_first_3": {
+    "enabled": true,
+    "id": "",
+    "id_2f": ""
+  },
+  "native_feature_first": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/1209147609",
+    "id_2f": ""
+  },
+  "inter_feature_first": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/5859637816",
+    "id_2f": "ca-app-pub-1458302844590844/9854723145"
+  },
+  "appopen_resume": {
+    "enabled": true,
+    "id": "ca-app-pub-1458302844590844/4546556140",
+    "id_2f": ""
+  },
+  "native_language_second_1": {
+    "enabled": true,
+    "id": "",
+    "id_2f": ""
+  },
+  "native_language_second_2": {
+    "enabled": true,
+    "id": "",
+    "id_2f": ""
+  },
+  "native_fs_second_1": {
+    "enabled": true,
+    "id": "",
+    "id_2f": ""
+  },
+  "native_fs_second_2": {
+    "enabled": true,
+    "id": "",
+    "id_2f": ""
+  }
+}

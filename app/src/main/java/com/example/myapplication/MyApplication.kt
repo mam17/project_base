@@ -11,13 +11,15 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.example.myapplication.ads.AdMobAds
+import com.example.myapplication.ads.AdOpenResumeUtils
 import com.example.myapplication.utils.AppEx.setupAppShortcuts
+import com.example.myapplication.utils.firebase.FirebaseConfigManager
 import com.example.myapplication.utils.SpManager
 import com.example.myapplication.utils.notification.NotificationUtils
 import com.libads.core.AdManager
 import com.libads.core.provider.admob.AdMobProvider
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 import javax.inject.Singleton
 
 @HiltAndroidApp
@@ -30,10 +32,14 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
     private var shouldShowAppOpenOnResume = false
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    @Inject
+    lateinit var spManager: SpManager
+
     override fun onCreate() {
         super<Application>.onCreate()
         mInstance = this
         context = applicationContext
+        FirebaseConfigManager.instance().fetch()
         setupAppShortcuts(this)
         registerActivityLifecycleCallbacks(this)
         AdManager.init(this) {
@@ -56,7 +62,7 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
         if (shouldShowAppOpenOnResume) {
             shouldShowAppOpenOnResume = false
             mainHandler.postDelayed({
-                currentActivity?.let { AdMobAds.showAppOpenResume(it) }
+                currentActivity?.let { AdOpenResumeUtils.showAppOpenResume(it) }
             }, APP_OPEN_SHOW_DELAY_MS)
         }
     }
