@@ -67,6 +67,7 @@ class FirebaseTrackingManager private constructor() {
             "ad_type" to event.adType.name.lowercase(),
             "ad_provider" to event.providerName,
             "event_time_ms" to event.timestampMillis,
+            "duration_ms" to event.durationMillis,
             "error_code" to event.errorCode,
             "error_message" to event.message,
             "reward_amount" to event.rewardAmount,

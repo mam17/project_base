@@ -23,7 +23,7 @@ object AdInterstitialUtils {
             activity = activity,
             adUnit = adUnit,
             showLoadingWhenNotReady = showLoadingWhenNotReady,
-            callback = showCallback(adUnit, onDismissed, onFailed)
+            callback = showCallback(onDismissed, onFailed)
         )
     }
 
@@ -38,7 +38,7 @@ object AdInterstitialUtils {
             fragment = fragment,
             adUnit = adUnit,
             showLoadingWhenNotReady = showLoadingWhenNotReady,
-            callback = showCallback(adUnit, onDismissed, onFailed)
+            callback = showCallback(onDismissed, onFailed)
         )
     }
 
@@ -69,17 +69,12 @@ object AdInterstitialUtils {
     }
 
     private fun showCallback(
-        adUnit: AdUnit,
         onDismissed: () -> Unit,
         onFailed: (message: String) -> Unit
     ) = object : AdShowCallback {
-        override fun onAdDismissed() {
-            AdManager.getInstance().preload(adUnit)
-            onDismissed()
-        }
+        override fun onAdDismissed() = onDismissed()
 
         override fun onAdFailedToShow(errorCode: Int, message: String) {
-            AdManager.getInstance().preload(adUnit)
             onFailed(message)
         }
     }

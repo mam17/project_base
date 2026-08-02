@@ -13,6 +13,23 @@ data class RemoteAdConfig(
     @SerializedName("list_id_2f")
     val listId2f: List<String> = emptyList()
 ) {
+    fun normalized(maxTwoFloorIds: Int = MAX_TWO_FLOOR_IDS): RemoteAdConfig {
+        val normalizedId = id.trim()
+        return copy(
+            id = normalizedId,
+            listId2f = listId2f
+                .asSequence()
+                .map(String::trim)
+                .filter(String::isNotEmpty)
+                .filterNot { it == normalizedId }
+                .distinct()
+                .take(maxTwoFloorIds)
+                .toList()
+        )
+    }
+
+    fun isValid(): Boolean = !enabled || id.isNotBlank()
+
     fun toAdUnit(
         adName: String,
         type: AdType,
@@ -28,7 +45,7 @@ data class RemoteAdConfig(
     }
 
     fun twoFloorNamedIds(adName: String): Map<String, String> {
-        return listId2f
+        return normalized().listId2f
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .mapIndexed { index, networkAdUnitId ->
@@ -37,5 +54,7 @@ data class RemoteAdConfig(
             .toMap()
     }
 
-
+    companion object {
+        const val MAX_TWO_FLOOR_IDS = 3
+    }
 }

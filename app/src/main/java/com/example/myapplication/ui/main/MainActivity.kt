@@ -6,8 +6,8 @@ import com.example.myapplication.R
 import com.example.myapplication.ads.AdBannerUtils
 import com.example.myapplication.ads.AdInterstitialUtils
 import com.example.myapplication.ads.AdNativeUtils
-import com.example.myapplication.ads.AdOpenResumeUtils
 import com.example.myapplication.ads.AdRewardUtils
+import com.example.myapplication.ads.AdsPreloadCoordinator
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.ui.alertfull.NotificationFSUtil
@@ -37,6 +37,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         binding.frNativeTimeOut.rlCloseAds.visibility = View.GONE
         binding.frNativeTimeOut.tvTimeCount.visibility = View.VISIBLE
         binding.frNativeTimeOut.btnCloseOnb.visibility = View.GONE
+        AdsPreloadCoordinator.start()
         showBanner()
         binding.tvShowInter.setOnClickListener {
             showInterstitial()
@@ -61,10 +62,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     override fun initData() {
-        AdOpenResumeUtils.preloadAppOpenResume()
-        AdInterstitialUtils.preload()
-        AdRewardUtils.preloadRewarded()
-        AdRewardUtils.preloadRewardedInterstitial()
         showNative()
     }
 

@@ -31,6 +31,7 @@ data class AdEvent(
     val mediationInfo: AdMediationInfo? = null,
     val rewardAmount: Int? = null,
     val rewardType: String? = null,
+    val durationMillis: Long? = null,
     val timestampMillis: Long = System.currentTimeMillis()
 ) {
     companion object {
@@ -42,7 +43,8 @@ data class AdEvent(
             revenue: AdRevenue? = null,
             mediationInfo: AdMediationInfo? = null,
             rewardAmount: Int? = null,
-            rewardType: String? = null
+            rewardType: String? = null,
+            durationMillis: Long? = null
         ) = AdEvent(
             eventType = eventType,
             adName = adUnit.id,
@@ -53,7 +55,8 @@ data class AdEvent(
             revenue = revenue,
             mediationInfo = mediationInfo,
             rewardAmount = rewardAmount,
-            rewardType = rewardType
+            rewardType = rewardType,
+            durationMillis = durationMillis
         )
     }
 }

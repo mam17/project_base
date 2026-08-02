@@ -24,7 +24,7 @@ object AdRewardUtils {
             activity = activity,
             adUnit = adUnit,
             showLoadingWhenNotReady = showLoadingWhenNotReady,
-            callback = showRewardCallback(adUnit, onRewardEarned, onDismissed, onFailed)
+            callback = showRewardCallback(onRewardEarned, onDismissed, onFailed)
         )
     }
 
@@ -40,7 +40,7 @@ object AdRewardUtils {
             fragment = fragment,
             adUnit = adUnit,
             showLoadingWhenNotReady = showLoadingWhenNotReady,
-            callback = showRewardCallback(adUnit, onRewardEarned, onDismissed, onFailed)
+            callback = showRewardCallback(onRewardEarned, onDismissed, onFailed)
         )
     }
 
@@ -141,7 +141,6 @@ object AdRewardUtils {
     }
 
     private fun showRewardCallback(
-        adUnit: AdUnit,
         onRewardEarned: (amount: Int, type: String) -> Unit,
         onDismissed: () -> Unit,
         onFailed: (message: String) -> Unit
@@ -150,13 +149,9 @@ object AdRewardUtils {
             onRewardEarned(amount, type)
         }
 
-        override fun onAdDismissed() {
-            AdManager.getInstance().preload(adUnit)
-            onDismissed()
-        }
+        override fun onAdDismissed() = onDismissed()
 
         override fun onAdFailedToShow(errorCode: Int, message: String) {
-            AdManager.getInstance().preload(adUnit)
             onFailed(message)
         }
     }

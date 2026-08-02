@@ -37,7 +37,8 @@ object AdLogger {
         revenue: AdRevenue? = null,
         mediationInfo: AdMediationInfo? = null,
         rewardAmount: Int? = null,
-        rewardType: String? = null
+        rewardType: String? = null,
+        durationMillis: Long? = null
     ) {
         val event = AdEvent.from(
             adUnit = adUnit,
@@ -47,7 +48,8 @@ object AdLogger {
             revenue = revenue,
             mediationInfo = mediationInfo,
             rewardAmount = rewardAmount,
-            rewardType = rewardType
+            rewardType = rewardType,
+            durationMillis = durationMillis
         )
         if (enabled) Log.d(TAG, event.toLogMessage())
         runCatching { eventListener?.onEvent(event) }
@@ -75,5 +77,6 @@ object AdLogger {
         }
         rewardAmount?.let { append(" rewardAmount=").append(it) }
         rewardType?.let { append(" rewardType='").append(it).append("'") }
+        durationMillis?.let { append(" durationMs=").append(it) }
     }
 }

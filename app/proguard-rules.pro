@@ -24,3 +24,8 @@
 -keep class com.appsflyer.** { *; }
 -keep class kotlin.jvm.internal.** { *; }
 -keep public class com.android.installreferrer.** { *; }
+
+# Optional mediation SDK annotations referenced by adapter bytecode.
+-dontwarn com.facebook.infer.annotation.**
+-dontwarn com.bytedance.sdk.openadsdk.core.model.NetExtParams$RenderType
+-dontwarn com.bytedance.sdk.openadsdk.core.settings.TTSdkSettings$FETCH_REQUEST_SOURCE

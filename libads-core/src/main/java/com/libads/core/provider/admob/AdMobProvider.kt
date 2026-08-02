@@ -24,7 +24,6 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.OnPaidEventListener
-import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
@@ -206,7 +205,6 @@ class AdMobProvider : AdProvider {
             AdType.BANNER -> isCachedFor(bannerAds, adUnit)
             AdType.APP_OPEN -> isAppOpenReady(adUnit)
             AdType.NATIVE -> isCachedFor(nativeAds, adUnit)
-            else -> false
         }
     }
 
@@ -587,7 +585,7 @@ class AdMobProvider : AdProvider {
         val displayMetrics = container.resources.displayMetrics
         val widthPixels = if (container.width > 0) container.width else displayMetrics.widthPixels
         val widthDp = (widthPixels / displayMetrics.density).toInt().coerceAtLeast(MIN_BANNER_WIDTH_DP)
-        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(container.context, widthDp)
+        return AdSize.getLargeAnchoredAdaptiveBannerAdSize(container.context, widthDp)
     }
 
     private fun createBannerAdRequest(adUnit: AdUnit): AdRequest {
@@ -619,7 +617,6 @@ class AdMobProvider : AdProvider {
             AdType.BANNER -> synchronized(cacheLock) { bannerAds.remove(adUnit.id) }?.value?.destroy()
             AdType.APP_OPEN -> synchronized(cacheLock) { appOpenAds.remove(adUnit.id) }
             AdType.NATIVE -> synchronized(cacheLock) { nativeAds.remove(adUnit.id) }?.value?.destroy()
-            else -> Unit
         }
     }
 
@@ -769,46 +766,6 @@ class AdMobProvider : AdProvider {
     ): OnPaidEventListener {
         return OnPaidEventListener { adValue ->
             callback.onPaidEvent(adValue.toAdRevenue(), mediationInfo)
-        }
-    }
-
-    private fun ResponseInfo?.toAdMediationInfo(): AdMediationInfo? {
-        val responseInfo = this ?: return null
-        val adapterInfo = responseInfo.loadedAdapterResponseInfo
-        val adapterClassName = adapterInfo?.adapterClassName
-            ?: responseInfo.mediationAdapterClassName
-        val adSourceName = adapterInfo?.adSourceName
-        if (adapterClassName.isNullOrBlank() && adSourceName.isNullOrBlank()) return null
-
-        return AdMediationInfo(
-            networkName = mediationNetworkName(adSourceName, adapterClassName),
-            adapterClassName = adapterClassName,
-            adSourceName = adSourceName,
-            adSourceId = adapterInfo?.adSourceId,
-            adSourceInstanceName = adapterInfo?.adSourceInstanceName,
-            adSourceInstanceId = adapterInfo?.adSourceInstanceId,
-            latencyMillis = adapterInfo?.latencyMillis
-        )
-    }
-
-    private fun mediationNetworkName(adSourceName: String?, adapterClassName: String?): String {
-        val identity = "$adSourceName $adapterClassName".lowercase()
-        return when {
-            "facebook" in identity || "meta" in identity || "audience" in identity -> "facebook"
-            "applovin" in identity -> "applovin"
-            "vungle" in identity || "liftoff" in identity -> "vungle"
-            "pangle" in identity || "bytedance" in identity -> "pangle"
-            "mintegral" in identity || "mbridge" in identity -> "mintegral"
-            "inmobi" in identity -> "inmobi"
-            "ironsource" in identity || "levelplay" in identity -> "ironsource"
-            "admob" in identity || "google" in identity -> "admob"
-            else -> adSourceName
-                ?.trim()
-                ?.lowercase()
-                ?.replace(Regex("[^a-z0-9]+"), "_")
-                ?.trim('_')
-                ?.takeIf { it.isNotEmpty() }
-                ?: "unknown"
         }
     }
 

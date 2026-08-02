@@ -2,6 +2,7 @@ package com.libads.core.internal
 
 import android.app.Activity
 import android.app.Application
+import android.os.SystemClock
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -24,7 +25,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class AdManagerImpl(application: Application) : AdManager {
@@ -34,7 +34,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
     private val providers = ConcurrentHashMap<String, AdProvider>()
     private val cache = AdCache()
     private val knownAdUnits = ConcurrentHashMap<PlacementKey, AdUnit>()
-    private val showingFullScreenPlacement = AtomicReference<PlacementKey?>(null)
+    private val fullScreenAdGate = FullScreenAdGate()
 
     override fun registerProvider(provider: AdProvider) {
         if (providers.putIfAbsent(provider.name, provider) != null) {
@@ -67,6 +67,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
         }
 
         val requestId = (registration as AdCache.Registration.Started).requestId
+        val loadStartedAt = SystemClock.elapsedRealtime()
         AdLogger.event(adUnit, AdEventType.LOAD_STARTED)
         scope.launch {
             val result = withTimeoutOrNull(adUnit.timeoutMillis.milliseconds) {
@@ -78,7 +79,11 @@ internal class AdManagerImpl(application: Application) : AdManager {
                 AdLogger.w("AdUnit '${adUnit.id}' load timed out after ${adUnit.timeoutMillis}ms")
             }
             if (cache.complete(adUnit, requestId, result)) {
-                logLoadResult(adUnit, result)
+                logLoadResult(
+                    adUnit,
+                    result,
+                    SystemClock.elapsedRealtime() - loadStartedAt
+                )
             }
         }
     }
@@ -129,9 +134,10 @@ internal class AdManagerImpl(application: Application) : AdManager {
             return
         }
         prepareAdUnit(provider, adUnit)
+        val loadStartedAt = SystemClock.elapsedRealtime()
         AdLogger.event(adUnit, AdEventType.LOAD_STARTED)
         provider.renderInto(container, adUnit) { result ->
-            logLoadResult(adUnit, result)
+            logLoadResult(adUnit, result, SystemClock.elapsedRealtime() - loadStartedAt)
             (callback ?: NoopLoadCallback).onResult(result)
         }
     }
@@ -151,7 +157,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
         }
         providers.values.forEach(AdProvider::destroyAll)
         knownAdUnits.clear()
-        showingFullScreenPlacement.set(null)
+        fullScreenAdGate.clear()
     }
 
     private fun showInternal(
@@ -168,7 +174,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
             notifyShowFailed(adUnit, callback, ERROR_INVALID_HOST, "Activity or Fragment is not RESUMED")
             return
         }
-        if (showingFullScreenPlacement.get() != null) {
+        if (fullScreenAdGate.isShowing()) {
             notifyShowFailed(adUnit, callback, ERROR_AD_ALREADY_SHOWING, "Another full-screen ad is showing")
             return
         }
@@ -254,16 +260,21 @@ internal class AdManagerImpl(application: Application) : AdManager {
         }
 
         val placement = PlacementKey.from(adUnit)
-        if (!showingFullScreenPlacement.compareAndSet(null, placement)) {
+        if (!fullScreenAdGate.acquire(placement)) {
             notifyShowFailed(adUnit, callback, ERROR_AD_ALREADY_SHOWING, "Another full-screen ad is showing")
             return
         }
 
         val delegate = callback ?: NoopShowCallback
         val completed = AtomicBoolean(false)
+        val showStartedAt = SystemClock.elapsedRealtime()
         val guardedCallback = object : AdShowCallback {
             override fun onAdShown() {
-                AdLogger.event(adUnit, AdEventType.SHOWN)
+                AdLogger.event(
+                    adUnit,
+                    AdEventType.SHOWN,
+                    durationMillis = SystemClock.elapsedRealtime() - showStartedAt
+                )
                 delegate.onAdShown()
             }
 
@@ -307,7 +318,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
 
             override fun onAdDismissed() {
                 if (!completed.compareAndSet(false, true)) return
-                showingFullScreenPlacement.compareAndSet(placement, null)
+                fullScreenAdGate.release(placement)
                 AdLogger.event(adUnit, AdEventType.DISMISSED)
                 try {
                     delegate.onAdDismissed()
@@ -318,7 +329,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
 
             override fun onAdFailedToShow(errorCode: Int, message: String) {
                 if (!completed.compareAndSet(false, true)) return
-                showingFullScreenPlacement.compareAndSet(placement, null)
+                fullScreenAdGate.release(placement)
                 AdLogger.event(
                     adUnit,
                     AdEventType.SHOW_FAILED,
@@ -392,16 +403,29 @@ internal class AdManagerImpl(application: Application) : AdManager {
         "Provider not registered"
     )
 
-    private fun logLoadResult(adUnit: AdUnit, result: AdResult) {
+    private fun logLoadResult(
+        adUnit: AdUnit,
+        result: AdResult,
+        durationMillis: Long? = null
+    ) {
         when (result) {
-            is AdResult.Success -> AdLogger.event(adUnit, AdEventType.LOADED)
+            is AdResult.Success -> AdLogger.event(
+                adUnit,
+                AdEventType.LOADED,
+                durationMillis = durationMillis
+            )
             is AdResult.Failure -> AdLogger.event(
                 adUnit,
                 AdEventType.LOAD_FAILED,
                 errorCode = result.errorCode,
-                message = result.message
+                message = result.message,
+                durationMillis = durationMillis
             )
-            is AdResult.TimedOut -> AdLogger.event(adUnit, AdEventType.LOAD_TIMED_OUT)
+            is AdResult.TimedOut -> AdLogger.event(
+                adUnit,
+                AdEventType.LOAD_TIMED_OUT,
+                durationMillis = durationMillis
+            )
         }
     }
 

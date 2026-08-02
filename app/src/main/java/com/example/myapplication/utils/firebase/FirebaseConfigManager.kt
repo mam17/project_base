@@ -200,10 +200,23 @@ class FirebaseConfigManager private constructor() {
     }
 
     private fun parseAdConfig(json: String): Map<String, RemoteAdConfig>? {
-        if (json.isBlank()) return null
+        if (json.isBlank() || json == "{}") return null
         val type = object : TypeToken<Map<String, RemoteAdConfig>>() {}.type
         return runCatching {
-            gson.fromJson<Map<String, RemoteAdConfig>>(json, type).orEmpty().toMap()
+            val parsed = gson.fromJson<Map<String, RemoteAdConfig>>(json, type).orEmpty()
+            val normalized = parsed.mapNotNull { (rawName, rawConfig) ->
+                val adName = rawName.trim()
+                val config = rawConfig.normalized()
+                when {
+                    adName.isEmpty() -> null
+                    !config.isValid() -> {
+                        Log.w(TAG, "Ignoring enabled placement '$adName' because id is blank")
+                        null
+                    }
+                    else -> adName to config
+                }
+            }.toMap()
+            normalized.takeIf { it.isNotEmpty() }
         }.onFailure { error ->
             Log.e(TAG, "Invalid ad_config JSON; keeping the cached value", error)
         }.getOrNull()
