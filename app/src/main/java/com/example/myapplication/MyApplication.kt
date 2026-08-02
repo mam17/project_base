@@ -12,7 +12,6 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.myapplication.ads.AdOpenResumeUtils
-import com.example.myapplication.ads.ConstantAds.APP_OPEN_SHOW_DELAY_MS
 import com.example.myapplication.utils.AppEx.setupAppShortcuts
 import com.example.myapplication.utils.firebase.FirebaseConfigManager
 import com.example.myapplication.utils.firebase.FirebaseTrackingManager
@@ -73,7 +72,7 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
             shouldShowAppOpenOnResume = false
             mainHandler.postDelayed({
                 currentActivity?.let { AdOpenResumeUtils.showAppOpenResume(it) }
-            }, APP_OPEN_SHOW_DELAY_MS)
+            }, 300L)
         }
     }
 
