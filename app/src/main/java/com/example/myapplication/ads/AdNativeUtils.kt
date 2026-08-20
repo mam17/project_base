@@ -8,7 +8,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.example.myapplication.R
+import com.example.myapplication.utils.firebase.FirebaseConfigManager
 import com.libads.core.AdManager
+import com.libads.core.AdType
+import com.libads.core.AdUnit
 import com.libads.core.callback.AdLoadCallback
 import com.libads.core.callback.AdResult
 
@@ -18,6 +21,7 @@ object AdNativeUtils {
     fun showNative(
         context: Context,
         nativeContainer: ViewGroup,
+        adUnit: AdUnit = AdUnits.mainNative,
         loadingLayoutRes: Int = R.layout.layout_native_ad_loading,
         onFailure: ((message: String) -> Unit)? = null
     ) {
@@ -26,10 +30,85 @@ object AdNativeUtils {
             .inflate(loadingLayoutRes, nativeContainer, false)
         nativeContainer.addView(loadingView)
 
-        renderNative(nativeContainer) { result ->
+        renderNative(nativeContainer, adUnit) { result ->
             if (result is AdResult.Failure) {
                 nativeContainer.removeAllViews()
                 onFailure?.invoke(result.message)
+            }
+        }
+    }
+
+    fun showNativeTwoFloor(
+        context: Context,
+        nativeContainer: ViewGroup,
+        placementName: String = "native_feature_first",
+        loadingLayoutRes: Int = R.layout.layout_native_ad_loading,
+        onFailure: ((message: String) -> Unit)? = null
+    ) {
+        val units = FirebaseConfigManager.instance().getTwoFloorAdUnits(placementName, AdType.NATIVE)
+        showNativeTwoFloor(
+            context = context,
+            nativeContainer = nativeContainer,
+            twoFloorUnits = units,
+            loadingLayoutRes = loadingLayoutRes,
+            onFailure = onFailure
+        )
+    }
+
+    fun showNativeTwoFloor(
+        context: Context,
+        nativeContainer: ViewGroup,
+        twoFloorUnits: TwoFloorAdUnits,
+        loadingLayoutRes: Int = R.layout.layout_native_ad_loading,
+        onFailure: ((message: String) -> Unit)? = null
+    ) {
+        val unit2f = twoFloorUnits.unit2f
+        val unitBase = twoFloorUnits.unitBase
+
+        if (unit2f == null && unitBase == null) {
+            onFailure?.invoke("No native ad unit configured for ${twoFloorUnits.placementName}")
+            return
+        }
+
+        nativeContainer.removeAllViews()
+        val loadingView = LayoutInflater.from(context)
+            .inflate(loadingLayoutRes, nativeContainer, false)
+        nativeContainer.addView(loadingView)
+
+        if (unit2f != null) {
+            AdManager.getInstance().renderInto(nativeContainer, unit2f) { result2f ->
+                when (result2f) {
+                    is AdResult.Success -> {
+                        // Rendered 2F native ad
+                    }
+                    is AdResult.Failure, is AdResult.TimedOut -> {
+                        if (unitBase != null) {
+                            AdManager.getInstance().renderInto(nativeContainer, unitBase) { baseResult ->
+                                if (baseResult is AdResult.Failure) {
+                                    nativeContainer.removeAllViews()
+                                    onFailure?.invoke(baseResult.message)
+                                } else if (baseResult is AdResult.TimedOut) {
+                                    nativeContainer.removeAllViews()
+                                    onFailure?.invoke("Native base timed out")
+                                }
+                            }
+                        } else {
+                            nativeContainer.removeAllViews()
+                            val msg = if (result2f is AdResult.Failure) result2f.message else "Native 2F timed out"
+                            onFailure?.invoke(msg)
+                        }
+                    }
+                }
+            }
+        } else if (unitBase != null) {
+            AdManager.getInstance().renderInto(nativeContainer, unitBase) { result ->
+                if (result is AdResult.Failure) {
+                    nativeContainer.removeAllViews()
+                    onFailure?.invoke(result.message)
+                } else if (result is AdResult.TimedOut) {
+                    nativeContainer.removeAllViews()
+                    onFailure?.invoke("Native timed out")
+                }
             }
         }
     }
@@ -43,6 +122,7 @@ object AdNativeUtils {
         closeButton: View,
         countdownSeconds: Long,
         onClose: () -> Unit,
+        adUnit: AdUnit = AdUnits.mainNative,
         onFailure: ((message: String) -> Unit)? = null
     ): CountDownTimer {
         rootView.visibility = View.VISIBLE
@@ -59,7 +139,7 @@ object AdNativeUtils {
             onClose()
         }
 
-        renderNative(nativeContainer) { result ->
+        renderNative(nativeContainer, adUnit) { result ->
             when (result) {
                 is AdResult.Success -> {
                     loadingContainer.visibility = View.GONE
@@ -93,8 +173,9 @@ object AdNativeUtils {
 
     private fun renderNative(
         container: ViewGroup,
+        adUnit: AdUnit,
         callback: AdLoadCallback
     ) {
-        AdManager.getInstance().renderInto(container, AdUnits.mainNative, callback)
+        AdManager.getInstance().renderInto(container, adUnit, callback)
     }
 }

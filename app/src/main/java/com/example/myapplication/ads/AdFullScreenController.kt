@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal object AdFullScreenController {
     private const val ERROR_TIMEOUT = -2
     private const val ERROR_INVALID_HOST = -5
+    private const val ERROR_NO_AD_CONFIGURED = -14
 
     fun show(
         activity: FragmentActivity,
@@ -57,6 +58,47 @@ internal object AdFullScreenController {
             callback = callback,
             showAction = { guarded ->
                 AdManager.getInstance().show(fragment, adUnit, guarded)
+            }
+        )
+    }
+
+    fun showTwoFloor(
+        activity: FragmentActivity,
+        twoFloorUnits: TwoFloorAdUnits,
+        showLoadingWhenNotReady: Boolean,
+        callback: AdShowCallback
+    ) {
+        showTwoFloorInternal(
+            activity = activity,
+            lifecycleOwner = activity,
+            twoFloorUnits = twoFloorUnits,
+            showLoadingWhenNotReady = showLoadingWhenNotReady,
+            callback = callback,
+            showAction = { unit, guarded ->
+                AdManager.getInstance().show(activity, unit, guarded)
+            }
+        )
+    }
+
+    fun showTwoFloor(
+        fragment: Fragment,
+        twoFloorUnits: TwoFloorAdUnits,
+        showLoadingWhenNotReady: Boolean,
+        callback: AdShowCallback
+    ) {
+        val activity = fragment.activity
+        if (activity == null) {
+            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached")
+            return
+        }
+        showTwoFloorInternal(
+            activity = activity,
+            lifecycleOwner = fragment.viewLifecycleOwnerOrFragment(),
+            twoFloorUnits = twoFloorUnits,
+            showLoadingWhenNotReady = showLoadingWhenNotReady,
+            callback = callback,
+            showAction = { unit, guarded ->
+                AdManager.getInstance().show(fragment, unit, guarded)
             }
         )
     }
@@ -127,6 +169,146 @@ internal object AdFullScreenController {
             if (!operation.resolveLoading()) return@preload
             when (result) {
                 is AdResult.Success -> showAction(operation.callback)
+                is AdResult.Failure -> operation.callback.onAdFailedToShow(
+                    result.errorCode,
+                    result.message
+                )
+                is AdResult.TimedOut -> operation.callback.onAdFailedToShow(
+                    ERROR_TIMEOUT,
+                    "Ad load timed out"
+                )
+            }
+        }
+    }
+
+    private fun showTwoFloorInternal(
+        activity: FragmentActivity,
+        lifecycleOwner: LifecycleOwner,
+        twoFloorUnits: TwoFloorAdUnits,
+        showLoadingWhenNotReady: Boolean,
+        callback: AdShowCallback,
+        showAction: (AdUnit, AdShowCallback) -> Unit
+    ) {
+        val unit2f = twoFloorUnits.unit2f
+        val unitBase = twoFloorUnits.unitBase
+
+        if (unit2f == null && unitBase == null) {
+            callback.onAdFailedToShow(
+                ERROR_NO_AD_CONFIGURED,
+                "No AdUnit configured for placement ${twoFloorUnits.placementName}"
+            )
+            return
+        }
+
+        val adManager = AdManager.getInstance()
+
+        // 1. Check if 2F is already ready
+        if (unit2f != null && adManager.isReady(unit2f)) {
+            val operation = LifecycleAdOperation(lifecycleOwner, null, callback)
+            if (operation.isActive()) {
+                showAction(unit2f, operation.callback)
+            }
+            return
+        }
+
+        // 2. Check if Base is already ready
+        if (unitBase != null && adManager.isReady(unitBase)) {
+            val operation = LifecycleAdOperation(lifecycleOwner, null, callback)
+            if (operation.isActive()) {
+                showAction(unitBase, operation.callback)
+            }
+            return
+        }
+
+        // 3. Start 2-Floor loading flow
+        val loadingDialog = if (showLoadingWhenNotReady) DialogLoadingAds(activity) else null
+        val operation = LifecycleAdOperation(lifecycleOwner, loadingDialog, callback)
+        if (!operation.isActive()) return
+
+        operation.showLoading()
+
+        if (unit2f != null) {
+            operation.scheduleTimeout(unit2f.timeoutMillis) {
+                tryLoadBaseFloor(unitBase, operation, showAction, adManager)
+            }
+            adManager.preload(unit2f) { result ->
+                when (result) {
+                    is AdResult.Success -> {
+                        if (operation.resolveLoading()) {
+                            showAction(unit2f, operation.callback)
+                        }
+                    }
+                    is AdResult.Failure, is AdResult.TimedOut -> {
+                        tryLoadBaseFloor(unitBase, operation, showAction, adManager)
+                    }
+                }
+            }
+        } else if (unitBase != null) {
+            loadBaseFloorDirectly(unitBase, operation, showAction, adManager)
+        }
+    }
+
+    private fun tryLoadBaseFloor(
+        unitBase: AdUnit?,
+        operation: LifecycleAdOperation,
+        showAction: (AdUnit, AdShowCallback) -> Unit,
+        adManager: AdManager
+    ) {
+        if (!operation.isActive()) return
+        if (unitBase == null) {
+            if (operation.resolveLoading()) {
+                operation.callback.onAdFailedToShow(
+                    ERROR_TIMEOUT,
+                    "2-Floor ad failed and no base ad available"
+                )
+            }
+            return
+        }
+
+        if (adManager.isReady(unitBase)) {
+            if (operation.resolveLoading()) {
+                showAction(unitBase, operation.callback)
+            }
+            return
+        }
+
+        operation.scheduleTimeout(unitBase.timeoutMillis) {
+            if (operation.resolveLoading()) {
+                operation.callback.onAdFailedToShow(ERROR_TIMEOUT, "Base ad load timed out")
+            }
+        }
+
+        adManager.preload(unitBase) { baseResult ->
+            if (!operation.resolveLoading()) return@preload
+            when (baseResult) {
+                is AdResult.Success -> showAction(unitBase, operation.callback)
+                is AdResult.Failure -> operation.callback.onAdFailedToShow(
+                    baseResult.errorCode,
+                    baseResult.message
+                )
+                is AdResult.TimedOut -> operation.callback.onAdFailedToShow(
+                    ERROR_TIMEOUT,
+                    "Base ad load timed out"
+                )
+            }
+        }
+    }
+
+    private fun loadBaseFloorDirectly(
+        unitBase: AdUnit,
+        operation: LifecycleAdOperation,
+        showAction: (AdUnit, AdShowCallback) -> Unit,
+        adManager: AdManager
+    ) {
+        operation.scheduleTimeout(unitBase.timeoutMillis) {
+            if (operation.resolveLoading()) {
+                operation.callback.onAdFailedToShow(ERROR_TIMEOUT, "Ad load timed out")
+            }
+        }
+        adManager.preload(unitBase) { result ->
+            if (!operation.resolveLoading()) return@preload
+            when (result) {
+                is AdResult.Success -> showAction(unitBase, operation.callback)
                 is AdResult.Failure -> operation.callback.onAdFailedToShow(
                     result.errorCode,
                     result.message
@@ -219,8 +401,9 @@ internal object AdFullScreenController {
 
         fun scheduleTimeout(delayMillis: Long, onTimeout: () -> Unit) {
             if (!isActive()) return
+            cancelTimeout()
             val runnable = Runnable {
-                if (resolveLoading()) onTimeout()
+                if (isActive()) onTimeout()
             }
             timeoutRunnable = runnable
             mainHandler.postDelayed(runnable, delayMillis)

@@ -6,6 +6,7 @@ import androidx.fragment.app.FragmentActivity
 import com.libads.core.AdManager
 import com.libads.core.callback.AdResult
 import com.libads.core.callback.AdShowCallback
+import java.util.concurrent.atomic.AtomicBoolean
 
 object AdOpenResumeUtils {
     private const val TAG = "AdOpenResumeUtils"
@@ -30,26 +31,40 @@ object AdOpenResumeUtils {
         }
     }
 
-    fun showAppOpenResume(activity: FragmentActivity) {
-        showAppOpenResume { callback ->
+    fun showAppOpenResume(activity: FragmentActivity, action: (() -> Unit)? = null) {
+        showAppOpenResume(action) { callback ->
             AdManager.getInstance().show(activity, AdUnits.appOpenResume, callback)
         }
     }
 
-    fun showAppOpenResume(fragment: Fragment) {
-        if (!fragment.isAdded) return
-        showAppOpenResume { callback ->
+    fun showAppOpenResume(fragment: Fragment, action: (() -> Unit)? = null) {
+        if (!fragment.isAdded) {
+            action?.invoke()
+            return
+        }
+        showAppOpenResume(action) { callback ->
             AdManager.getInstance().show(fragment, AdUnits.appOpenResume, callback)
         }
     }
 
-    private fun showAppOpenResume(showAction: (AdShowCallback) -> Unit) {
-        if (isShowingAppOpen) return
+    private fun showAppOpenResume(action: (() -> Unit)?, showAction: (AdShowCallback) -> Unit) {
+        if (isShowingAppOpen) {
+            action?.invoke()
+            return
+        }
 
         if (!AdManager.getInstance().isReady(AdUnits.appOpenResume)) {
             Log.d(TAG, "showAppOpenResume: not ready")
             preloadAppOpenResume()
+            action?.invoke()
             return
+        }
+
+        val executed = AtomicBoolean(false)
+        val handleNext = {
+            if (executed.compareAndSet(false, true)) {
+                action?.invoke()
+            }
         }
 
         isShowingAppOpen = true
@@ -63,12 +78,14 @@ object AdOpenResumeUtils {
                 Log.d(TAG, "showAppOpenResume: dismissed")
                 isShowingAppOpen = false
                 preloadAppOpenResume()
+                handleNext()
             }
 
             override fun onAdFailedToShow(errorCode: Int, message: String) {
                 Log.e(TAG, "showAppOpenResume: failed $errorCode $message")
                 isShowingAppOpen = false
                 preloadAppOpenResume()
+                handleNext()
             }
         })
     }

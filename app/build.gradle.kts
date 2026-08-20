@@ -61,7 +61,6 @@ android {
             manifestPlaceholders["ad_app_id"] = "ca-app-pub-3940256099942544~3347511713"
         }
         debug {
-
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -86,13 +85,20 @@ android {
         buildConfig = true
         viewBinding = true
     }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
+
 val formattedDate: String? = SimpleDateFormat("MM.dd.yyyy").format(Date())
 base {
     archivesName.set(
         "SMS_WA_v${android.defaultConfig.versionName}(${android.defaultConfig.versionCode})_${formattedDate}"
     )
 }
+
 dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.core.ktx)
@@ -180,11 +186,9 @@ dependencies {
     implementation("com.google.ads.mediation:mintegral:17.1.61.1")
     implementation("com.google.ads.mediation:inmobi:11.3.0.1")
     implementation("com.google.ads.mediation:ironsource:9.5.0.0")
-//
+
     // AppsFlyer MMP + install attribution helpers
     implementation("com.appsflyer:af-android-sdk:7.0.0")
     implementation("com.android.installreferrer:installreferrer:2.2")
     implementation("com.google.android.gms:play-services-appset:16.1.0")
-//
-//    implementation("com.android.billingclient:billing-ktx:8.2.1")
 }

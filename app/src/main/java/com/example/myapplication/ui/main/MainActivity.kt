@@ -14,6 +14,7 @@ import com.example.myapplication.ui.alertfull.NotificationFSUtil
 import com.example.myapplication.ui.alertfull.NotificationFSUtil.scheduleFullScreenNotificationDiary
 import com.example.myapplication.ui.alertfull.PermissionFragment
 import com.example.myapplication.ui.language.LanguageActivity
+import com.example.myapplication.ui.test.TestActivity
 import com.example.myapplication.utils.DialogEx.showDialogAlert
 import com.example.myapplication.utils.PermissionUtils
 import com.example.myapplication.utils.notification.NotificationUtils
@@ -40,24 +41,34 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         AdsPreloadCoordinator.start()
         showBanner()
         binding.tvShowInter.setOnClickListener {
-            showInterstitial()
+            showInterstitial {
+                startNextActivity(TestActivity::class.java)
+            }
         }
 
         binding.tvShowReward.setOnClickListener {
-            showRewarded()
+            showRewarded{
+                startNextActivity(TestActivity::class.java)
+            }
         }
 
         binding.tvShowInterNative.setOnClickListener {
             showInterstitialThenNativeTimeout()
         }
         binding.tvLoadAndShowInter.setOnClickListener {
-            loadAndShowInterstitial()
+            loadAndShowInterstitial{
+                startNextActivity(TestActivity::class.java)
+            }
         }
         binding.tvLoadAndShowReward.setOnClickListener {
-            loadAndShowRewarded()
+            loadAndShowRewarded{
+                startNextActivity(TestActivity::class.java)
+            }
         }
         binding.tvShowRewardInter.setOnClickListener {
-            loadAndShowRewardedInterstitial()
+            loadAndShowRewardedInterstitial{
+                startNextActivity(TestActivity::class.java)
+            }
         }
     }
 
@@ -102,48 +113,68 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
     }
 
-    private fun showInterstitial() {
-        AdInterstitialUtils.show(
-            activity = this,
-            onDismissed = { showToast("Interstitial dismissed") },
-            onFailed = { message -> showToast("Interstitial failed: $message") }
-        )
+    private fun showInterstitial(action: () -> Unit = {}) {
+        AdInterstitialUtils.show(activity = this, action = action)
     }
 
-    private fun showRewarded() {
+    private fun showRewarded(action: () -> Unit = {}) {
         AdRewardUtils.showRewarded(
             activity = this,
             onRewardEarned = { amount, type -> showToast("Reward earned: $amount $type") },
-            onDismissed = { showToast("Rewarded dismissed") },
-            onFailed = { message -> showToast("Rewarded failed: $message") }
+            onDismissed = {
+                showToast("Rewarded dismissed")
+                action.invoke()
+            },
+            onFailed = { message ->
+                showToast("Rewarded failed: $message")
+                action.invoke()
+            }
         )
     }
 
-    private fun loadAndShowInterstitial() {
+    private fun loadAndShowInterstitial(action: () -> Unit = {}) {
         AdInterstitialUtils.loadAndShow(
             activity = this,
-            onDismissed = { showToast("LoadAndShow interstitial dismissed") },
-            onFailed = { message -> showToast("LoadAndShow interstitial failed: $message") }
+            onDismissed = {
+                showToast("LoadAndShow interstitial dismissed")
+                action.invoke()
+            },
+            onFailed = { message ->
+                showToast("LoadAndShow interstitial failed: $message")
+                action.invoke()
+            }
         )
     }
 
-    private fun loadAndShowRewarded() {
+    private fun loadAndShowRewarded(action: () -> Unit = {}) {
         AdRewardUtils.loadAndShowRewarded(
             activity = this,
             onRewardEarned = { amount, type -> showToast("Reward earned: $amount $type") },
-            onDismissed = { showToast("LoadAndShow rewarded dismissed") },
-            onFailed = { message -> showToast("LoadAndShow rewarded failed: $message") }
+            onDismissed = {
+                showToast("LoadAndShow rewarded dismissed")
+                action.invoke()
+            },
+            onFailed = { message ->
+                showToast("LoadAndShow rewarded failed: $message")
+                action.invoke()
+            }
         )
     }
 
-    private fun loadAndShowRewardedInterstitial() {
+    private fun loadAndShowRewardedInterstitial(action: () -> Unit = {}) {
         AdRewardUtils.loadAndShowRewardedInterstitial(
             activity = this,
             onRewardEarned = { amount, type ->
                 showToast("Rewarded interstitial earned: $amount $type")
             },
-            onDismissed = { showToast("Rewarded interstitial dismissed") },
-            onFailed = { message -> showToast("Rewarded interstitial failed: $message") }
+            onDismissed = {
+                showToast("Rewarded interstitial dismissed")
+                action.invoke()
+            },
+            onFailed = { message ->
+                showToast("Rewarded interstitial failed: $message")
+                action.invoke()
+            }
         )
     }
 
@@ -173,11 +204,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun showInterstitialThenNativeTimeout() {
-        AdInterstitialUtils.show(
-            activity = this,
-            onDismissed = { showNativeTimeout() },
-            onFailed = { showNativeTimeout() }
-        )
+        AdInterstitialUtils.show(activity = this) {
+            showNativeTimeout()
+        }
     }
 
     private fun showNativeTimeout() {
