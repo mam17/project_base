@@ -15,10 +15,11 @@ object AdsPreloadCoordinator {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     fun start() {
-        if (!FirebaseConfigManager.instance().isEnableAllAds) return
+        if (!RemoteAdConfig.isEnableAllAds) return
         if (!started.compareAndSet(false, true)) return
 
         AdInterstitialUtils.preload()
+        AdNativeUtils.preload()
         mainHandler.postDelayed({ AdRewardUtils.preloadRewarded() }, REWARDED_DELAY_MS)
         mainHandler.postDelayed(
             { AdRewardUtils.preloadRewardedInterstitial() },

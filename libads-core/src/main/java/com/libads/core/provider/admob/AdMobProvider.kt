@@ -96,6 +96,7 @@ class AdMobProvider : AdProvider {
                     AdType.REWARDED -> loadRewarded(context, adUnit, callback)
                     AdType.REWARDED_INTERSTITIAL -> loadRewardedInterstitial(context, adUnit, callback)
                     AdType.APP_OPEN -> loadAppOpen(context, adUnit, callback)
+                    AdType.NATIVE -> loadNative(context, adUnit, callback)
                     else -> callback.onResult(
                         AdResult.Failure(adUnit.id, ERROR_UNSUPPORTED, "Unsupported load type: ${adUnit.type}")
                     )
@@ -195,6 +196,36 @@ class AdMobProvider : AdProvider {
                     }
                 }
             })
+    }
+
+    private fun loadNative(context: Context, adUnit: AdUnit, callback: AdLoadCallback) {
+        val generation = beginLoad(adUnit)
+        val adLoader = AdLoader.Builder(context, adUnit.networkAdUnitId)
+            .forNativeAd { nativeAd ->
+                if (!isCurrent(adUnit, generation)) {
+                    nativeAd.destroy()
+                    callback.onResult(supersededResult(adUnit))
+                    return@forNativeAd
+                }
+                synchronized(cacheLock) { nativeAds.remove(adUnit.id) }?.value?.destroy()
+                if (storeIfCurrent(adUnit, generation, nativeAds, nativeAd)) {
+                    callback.onResult(AdResult.Success(adUnit.id))
+                } else {
+                    nativeAd.destroy()
+                    callback.onResult(supersededResult(adUnit))
+                }
+            }
+            .withAdListener(object : AdListener() {
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    if (removeIfCurrent(adUnit, generation, nativeAds)) {
+                        callback.onResult(AdResult.Failure(adUnit.id, error.code, error.message))
+                    } else {
+                        callback.onResult(supersededResult(adUnit))
+                    }
+                }
+            })
+            .build()
+        adLoader.loadAd(AdRequest.Builder().build())
     }
 
     override fun isReady(adUnit: AdUnit): Boolean {
@@ -370,6 +401,31 @@ class AdMobProvider : AdProvider {
     }
 
     private fun renderNativeInto(container: ViewGroup, adUnit: AdUnit, callback: AdLoadCallback) {
+        val cachedNative = takeCached(nativeAds, adUnit)
+        if (cachedNative != null) {
+            cachedNative.setOnPaidEventListener { adValue ->
+                AdLogger.event(
+                    adUnit,
+                    AdEventType.PAID,
+                    revenue = adValue.toAdRevenue(),
+                    mediationInfo = cachedNative.responseInfo.toAdMediationInfo()
+                )
+            }
+            val nativeAdView = findNativeAdView(container) ?: createNativeAdView(container.context)
+            bindNativeAd(cachedNative, nativeAdView)
+            if (nativeAdView.parent == null) {
+                container.removeAllViews()
+                container.addView(nativeAdView)
+            }
+            AdLogger.event(
+                adUnit,
+                AdEventType.IMPRESSION,
+                mediationInfo = cachedNative.responseInfo.toAdMediationInfo()
+            )
+            callback.onResult(AdResult.Success(adUnit.id))
+            return
+        }
+
         val generation = beginLoad(adUnit)
         var loadedNativeAd: NativeAd? = null
         val adLoader = AdLoader.Builder(container.context, adUnit.networkAdUnitId)
@@ -678,21 +734,20 @@ class AdMobProvider : AdProvider {
     }
 
     private fun startMobileAdsInitialization(context: Context) {
+        synchronized(initializationLock) {
+            initializationState = InitializationState.READY
+        }
         try {
             MobileAds.initialize(context) {
-                val actions = synchronized(initializationLock) {
-                    initializationState = InitializationState.READY
-                    pendingInitializationActions.toList().also { pendingInitializationActions.clear() }
-                }
-                actions.forEach { it.action() }
+                // Background mediation adapters completed
             }
         } catch (throwable: Throwable) {
-            val actions = synchronized(initializationLock) {
-                initializationState = InitializationState.FAILED
-                pendingInitializationActions.toList().also { pendingInitializationActions.clear() }
-            }
-            actions.forEach { it.onFailure() }
+            AdLogger.e("MobileAds.initialize failed", throwable)
         }
+        val actions = synchronized(initializationLock) {
+            pendingInitializationActions.toList().also { pendingInitializationActions.clear() }
+        }
+        actions.forEach { it.action() }
     }
 
     private fun beginLoad(adUnit: AdUnit): Long = synchronized(cacheLock) {

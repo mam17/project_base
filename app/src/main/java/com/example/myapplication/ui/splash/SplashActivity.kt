@@ -92,6 +92,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
         val startedAt = System.currentTimeMillis()
         UmpConsentManager.gatherConsent(this) {
             AppsFlyerMmpManager.onConsentReady()
+            com.example.myapplication.ads.AdsPreloadCoordinator.start()
             lifecycleScope.launch {
                 val remainingDelay = SPLASH_MIN_DURATION_MS - (System.currentTimeMillis() - startedAt)
                 if (remainingDelay > 0) delay(remainingDelay.milliseconds)

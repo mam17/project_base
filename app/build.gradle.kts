@@ -31,13 +31,6 @@ android {
         versionCode = 1
         versionName = "1.0.1"
 
-        buildConfigField("String", "inter_test", "\"ca-app-pub-3940256099942544/1033173712\"")
-        buildConfigField("String", "native_test", "\"ca-app-pub-3940256099942544/2247696110\"")
-        buildConfigField("String", "reward_test", "\"ca-app-pub-3940256099942544/5224354917\"")
-        buildConfigField("String", "reward_inter_test", "\"ca-app-pub-3940256099942544/5354046379\"")
-        buildConfigField("String", "appopen_resume_test", "\"ca-app-pub-3940256099942544/9257395921\"")
-        buildConfigField("String", "banner_test", "\"ca-app-pub-3940256099942544/2014213617\"")
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

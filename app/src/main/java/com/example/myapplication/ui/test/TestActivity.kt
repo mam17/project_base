@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.myapplication.ads.AdInterstitialUtils
 import com.example.myapplication.ads.AdNativeUtils
 import com.example.myapplication.ads.AdRewardUtils
+import com.example.myapplication.ads.AdUnits
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityTestBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -55,7 +56,7 @@ class TestActivity : BaseActivity<ActivityTestBinding>(ActivityTestBinding::infl
         binding.tvShowNativeWith2f.setOnClickListener {
             updateStatus("Loading 2-Floor Native into container ($TEST_NATIVE_PLACEMENT)...")
             AdNativeUtils.showNativeTwoFloor(
-                context = this,
+                activity = this,
                 nativeContainer = binding.frNative,
                 placementName = TEST_NATIVE_PLACEMENT,
                 onFailure = { message ->
@@ -77,8 +78,8 @@ class TestActivity : BaseActivity<ActivityTestBinding>(ActivityTestBinding::infl
 
     companion object {
         private const val TAG = "TestActivity"
-        private const val TEST_INTER_PLACEMENT = "inter_feature_first"
-        private const val TEST_REWARD_PLACEMENT = "reward_feature"
-        private const val TEST_NATIVE_PLACEMENT = "native_feature_first"
+        private const val TEST_INTER_PLACEMENT = AdUnits.INTER_FEATURE_FIRST
+        private const val TEST_REWARD_PLACEMENT = AdUnits.REWARD_FEATURE
+        private const val TEST_NATIVE_PLACEMENT = AdUnits.NATIVE_FEATURE_FIRST
     }
 }

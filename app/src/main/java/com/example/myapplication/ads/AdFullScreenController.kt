@@ -27,6 +27,10 @@ internal object AdFullScreenController {
         showLoadingWhenNotReady: Boolean,
         callback: AdShowCallback
     ) {
+        if (activity.isFinishing || activity.isDestroyed) {
+            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Activity is finishing or destroyed")
+            return
+        }
         showInternal(
             activity = activity,
             lifecycleOwner = activity,
@@ -46,8 +50,8 @@ internal object AdFullScreenController {
         callback: AdShowCallback
     ) {
         val activity = fragment.activity
-        if (activity == null) {
-            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached")
+        if (activity == null || !fragment.isAdded || fragment.isDetached || activity.isFinishing || activity.isDestroyed) {
+            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached or Activity is destroyed")
             return
         }
         showInternal(
@@ -68,6 +72,10 @@ internal object AdFullScreenController {
         showLoadingWhenNotReady: Boolean,
         callback: AdShowCallback
     ) {
+        if (activity.isFinishing || activity.isDestroyed) {
+            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Activity is finishing or destroyed")
+            return
+        }
         showTwoFloorInternal(
             activity = activity,
             lifecycleOwner = activity,
@@ -87,8 +95,8 @@ internal object AdFullScreenController {
         callback: AdShowCallback
     ) {
         val activity = fragment.activity
-        if (activity == null) {
-            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached")
+        if (activity == null || !fragment.isAdded || fragment.isDetached || activity.isFinishing || activity.isDestroyed) {
+            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached or Activity is destroyed")
             return
         }
         showTwoFloorInternal(
@@ -108,6 +116,10 @@ internal object AdFullScreenController {
         adUnit: AdUnit,
         callback: AdShowCallback
     ) {
+        if (activity.isFinishing || activity.isDestroyed) {
+            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Activity is finishing or destroyed")
+            return
+        }
         loadAndShowInternal(
             activity = activity,
             lifecycleOwner = activity,
@@ -124,8 +136,8 @@ internal object AdFullScreenController {
         callback: AdShowCallback
     ) {
         val activity = fragment.activity
-        if (activity == null) {
-            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached")
+        if (activity == null || !fragment.isAdded || fragment.isDetached || activity.isFinishing || activity.isDestroyed) {
+            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached or Activity is destroyed")
             return
         }
         loadAndShowInternal(
@@ -134,6 +146,47 @@ internal object AdFullScreenController {
             callback = callback,
             showAction = { guarded ->
                 AdManager.getInstance().loadAndShow(fragment, adUnit, guarded)
+            }
+        )
+    }
+
+    fun loadAndShowTwoFloor(
+        activity: FragmentActivity,
+        twoFloorUnits: TwoFloorAdUnits,
+        callback: AdShowCallback
+    ) {
+        if (activity.isFinishing || activity.isDestroyed) {
+            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Activity is finishing or destroyed")
+            return
+        }
+        loadAndShowTwoFloorInternal(
+            activity = activity,
+            lifecycleOwner = activity,
+            twoFloorUnits = twoFloorUnits,
+            callback = callback,
+            showAction = { unit, guarded ->
+                AdManager.getInstance().show(activity, unit, guarded)
+            }
+        )
+    }
+
+    fun loadAndShowTwoFloor(
+        fragment: Fragment,
+        twoFloorUnits: TwoFloorAdUnits,
+        callback: AdShowCallback
+    ) {
+        val activity = fragment.activity
+        if (activity == null || !fragment.isAdded || fragment.isDetached || activity.isFinishing || activity.isDestroyed) {
+            callback.onAdFailedToShow(ERROR_INVALID_HOST, "Fragment is not attached or Activity is destroyed")
+            return
+        }
+        loadAndShowTwoFloorInternal(
+            activity = activity,
+            lifecycleOwner = fragment.viewLifecycleOwnerOrFragment(),
+            twoFloorUnits = twoFloorUnits,
+            callback = callback,
+            showAction = { unit, guarded ->
+                AdManager.getInstance().show(fragment, unit, guarded)
             }
         )
     }
@@ -202,7 +255,7 @@ internal object AdFullScreenController {
 
         val adManager = AdManager.getInstance()
 
-        // 1. Check if 2F is already ready
+        // 1. Check if 2F is already ready in cache
         if (unit2f != null && adManager.isReady(unit2f)) {
             val operation = LifecycleAdOperation(lifecycleOwner, null, callback)
             if (operation.isActive()) {
@@ -211,7 +264,7 @@ internal object AdFullScreenController {
             return
         }
 
-        // 2. Check if Base is already ready
+        // 2. Check if Base is already ready in cache
         if (unitBase != null && adManager.isReady(unitBase)) {
             val operation = LifecycleAdOperation(lifecycleOwner, null, callback)
             if (operation.isActive()) {
@@ -220,7 +273,7 @@ internal object AdFullScreenController {
             return
         }
 
-        // 3. Start 2-Floor loading flow
+        // 3. Start 2-Floor loading flow with Loading Dialog
         val loadingDialog = if (showLoadingWhenNotReady) DialogLoadingAds(activity) else null
         val operation = LifecycleAdOperation(lifecycleOwner, loadingDialog, callback)
         if (!operation.isActive()) return
@@ -244,6 +297,57 @@ internal object AdFullScreenController {
                 }
             }
         } else if (unitBase != null) {
+            loadBaseFloorDirectly(unitBase, operation, showAction, adManager)
+        }
+    }
+
+    private fun loadAndShowTwoFloorInternal(
+        activity: FragmentActivity,
+        lifecycleOwner: LifecycleOwner,
+        twoFloorUnits: TwoFloorAdUnits,
+        callback: AdShowCallback,
+        showAction: (AdUnit, AdShowCallback) -> Unit
+    ) {
+        val unit2f = twoFloorUnits.unit2f
+        val unitBase = twoFloorUnits.unitBase
+
+        if (unit2f == null && unitBase == null) {
+            callback.onAdFailedToShow(
+                ERROR_NO_AD_CONFIGURED,
+                "No AdUnit configured for placement ${twoFloorUnits.placementName}"
+            )
+            return
+        }
+
+        val adManager = AdManager.getInstance()
+        val operation = LifecycleAdOperation(
+            lifecycleOwner = lifecycleOwner,
+            loadingDialog = DialogLoadingAds(activity),
+            delegate = callback
+        )
+        if (!operation.isActive()) return
+
+        operation.showLoading()
+
+        if (unit2f != null) {
+            adManager.destroy(unit2f)
+            operation.scheduleTimeout(unit2f.timeoutMillis) {
+                tryLoadBaseFloor(unitBase, operation, showAction, adManager)
+            }
+            adManager.preload(unit2f) { result ->
+                when (result) {
+                    is AdResult.Success -> {
+                        if (operation.resolveLoading()) {
+                            showAction(unit2f, operation.callback)
+                        }
+                    }
+                    is AdResult.Failure, is AdResult.TimedOut -> {
+                        tryLoadBaseFloor(unitBase, operation, showAction, adManager)
+                    }
+                }
+            }
+        } else if (unitBase != null) {
+            adManager.destroy(unitBase)
             loadBaseFloorDirectly(unitBase, operation, showAction, adManager)
         }
     }
@@ -396,7 +500,9 @@ internal object AdFullScreenController {
 
         fun showLoading() {
             if (!isActive()) return
-            runCatching { loadingDialog?.show() }
+            runCatching {
+                if (loadingDialog?.isShowing != true) loadingDialog?.show()
+            }
         }
 
         fun scheduleTimeout(delayMillis: Long, onTimeout: () -> Unit) {

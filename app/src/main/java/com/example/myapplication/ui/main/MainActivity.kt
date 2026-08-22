@@ -183,8 +183,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         binding.frBannerAds.shimmerBanner.startShimmer()
         binding.frBannerAds.bannerContainer.post {
             AdBannerUtils.showBanner(
-                binding.frBannerAds.bannerContainer,
-                CollapsiblePositionType.BOTTOM
+                activity = this,
+                container = binding.frBannerAds.bannerContainer,
+                collapsiblePositionType = CollapsiblePositionType.BOTTOM
             ) { result ->
                 binding.frBannerAds.shimmerBanner.stopShimmer()
                 binding.frBannerAds.shimmerBanner.visibility = View.GONE
@@ -197,7 +198,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
     private fun showNative() {
         AdNativeUtils.showNative(
-            context = this,
+            activity = this,
             nativeContainer = binding.frNative,
             onFailure = { message -> showToast("Native failed: $message") }
         )
@@ -212,6 +213,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private fun showNativeTimeout() {
         nativeCloseTimer?.cancel()
         nativeCloseTimer = AdNativeUtils.showNativeWithCountdown(
+            lifecycleOwner = this,
             rootView = binding.frNativeTimeOut.root,
             nativeContainer = binding.frNativeTimeOut.nativeFullContainer,
             loadingContainer = binding.frNativeTimeOut.nativeFullLoadingContainer,

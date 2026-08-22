@@ -1,52 +1,170 @@
 package com.example.myapplication.ads
 
-import com.example.myapplication.BuildConfig
 import com.libads.core.AdType
 import com.libads.core.AdUnit
 import com.libads.core.CollapsiblePositionType
 import com.libads.core.provider.admob.AdMobProvider
 
+/**
+ * Single Source of Truth for all ad placement declarations and helper accessors in the application.
+ */
 object AdUnits {
-    val mainInterstitial = AdUnit(
+
+    // --- Splash Placements ---
+    const val INTER_SPLASH_FIRST = "inter_splash_first"
+    const val BANNER_SPLASH_FIRST = "banner_splash_first"
+    const val NATIVE_FS_SPLASH_FIRST = "native_fs_splash_first"
+    const val NATIVE_FS_SPLASH_SECOND = "native_fs_splash_second"
+
+    // --- Language Placements ---
+    const val NATIVE_LANGUAGE_FIRST_1 = "native_language_first_1"
+    const val NATIVE_LANGUAGE_FIRST_2 = "native_language_first_2"
+    const val NATIVE_LANGUAGE_SECOND_1 = "native_language_second_1"
+    const val NATIVE_LANGUAGE_SECOND_2 = "native_language_second_2"
+
+    // --- Onboarding Placements ---
+    const val NATIVE_OB_FIRST_1 = "native_ob_first_1"
+    const val NATIVE_OB_FIRST_3 = "native_ob_first_3"
+    const val NATIVE_FS_FIRST_1 = "native_fs_first_1"
+    const val NATIVE_FS_FIRST_2 = "native_fs_first_2"
+
+    const val NATIVE_OB_SECOND_1 = "native_ob_second_1"
+    const val NATIVE_OB_SECOND_3 = "native_ob_second_3"
+    const val NATIVE_FS_SECOND_1 = "native_fs_second_1"
+    const val NATIVE_FS_SECOND_2 = "native_fs_second_2"
+
+    // --- Feature Placements ---
+    const val NATIVE_FEATURE_FIRST = "native_feature_first"
+    const val INTER_FEATURE_FIRST = "inter_feature_first"
+    const val REWARD_FEATURE = "reward_feature"
+
+    // --- Navigation Placements ---
+    const val INTER_HOME = "inter_home"
+    const val INTER_BACK = "inter_back"
+
+    // --- Open Resume Placement ---
+    const val APPOPEN_RESUME = "appopen_resume"
+
+    // --- Banner Placements ---
+    const val BANNER_COLLAP = "banner_collap"
+
+    // --- Uninstall & Notification Placements ---
+    const val INTER_UNINSTALL_OPENAPP = "inter_uninstall_openapp"
+    const val INTER_STILL_UNINSTALL = "inter_still_uninstall"
+    const val INTER_NOTI_LOCKSCREEN = "inter_noti_lockscreen"
+
+    /**
+     * Resolves a [TwoFloorAdUnits] bundle containing Floor 1 (2F) and Floor 2 (Base) AdUnits.
+     * Uses BuildConfig test IDs in DEBUG mode and AdUnitConfig from Remote Config in RELEASE mode.
+     */
+    fun getTwoFloor(
+        placementName: String,
+        type: AdType,
+        timeout2fMillis: Long = RemoteAdConfig.DEFAULT_TIMEOUT_2F_MILLIS,
+        timeoutBaseMillis: Long = RemoteAdConfig.DEFAULT_TIMEOUT_BASE_MILLIS
+    ): TwoFloorAdUnits {
+        return RemoteAdConfig.getTwoFloorAdUnits(
+            adName = placementName,
+            type = type,
+            timeout2fMillis = timeout2fMillis,
+            timeoutBaseMillis = timeoutBaseMillis
+        )
+    }
+
+    /**
+     * Resolves a single [AdUnit] for the given placement and type.
+     * Uses BuildConfig test IDs in DEBUG mode and AdUnitConfig from Remote Config in RELEASE mode.
+     */
+    fun getUnit(
+        placementName: String,
+        type: AdType,
+        is2Floor: Boolean = false,
+        timeoutMillis: Long = RemoteAdConfig.DEFAULT_TIMEOUT_BASE_MILLIS
+    ): AdUnit? {
+        return RemoteAdConfig.getAdUnit(
+            adName = placementName,
+            type = type,
+            is2Floor = is2Floor,
+            timeoutMillis = timeoutMillis
+        )
+    }
+
+    // --- Backward Compatible Default AdUnits ---
+    val mainInterstitial: AdUnit
+        get() = getUnit(INTER_FEATURE_FIRST, AdType.INTERSTITIAL) ?: defaultInterstitial
+
+    val mainRewarded: AdUnit
+        get() = getUnit(REWARD_FEATURE, AdType.REWARDED) ?: defaultRewarded
+
+    val mainRewardedInterstitial: AdUnit
+        get() = getUnit(REWARD_FEATURE, AdType.REWARDED_INTERSTITIAL) ?: defaultRewardedInterstitial
+
+    val mainBanner: AdUnit
+        get() = getUnit(BANNER_COLLAP, AdType.BANNER) ?: defaultBanner
+
+    val mainNative: AdUnit
+        get() = getUnit(NATIVE_FEATURE_FIRST, AdType.NATIVE) ?: defaultNative
+
+    val appOpenResume: AdUnit
+        get() = getUnit(APPOPEN_RESUME, AdType.APP_OPEN) ?: defaultAppOpenResume
+
+    // --- Test Ad Unit IDs (AdMob standard test IDs) ---
+    const val TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
+    const val TEST_NATIVE_ID = "ca-app-pub-3940256099942544/2247696110"
+    const val TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
+    const val TEST_REWARDED_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/5354046379"
+    const val TEST_APPOPEN_RESUME_ID = "ca-app-pub-3940256099942544/9257395921"
+    const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/2014213617"
+
+    // Backward-compatible aliases
+    const val inter_test = TEST_INTERSTITIAL_ID
+    const val native_test = TEST_NATIVE_ID
+    const val reward_test = TEST_REWARDED_ID
+    const val reward_inter_test = TEST_REWARDED_INTERSTITIAL_ID
+    const val appopen_resume_test = TEST_APPOPEN_RESUME_ID
+    const val banner_test = TEST_BANNER_ID
+
+    // Fallback static test units
+    val defaultInterstitial = AdUnit(
         id = "main_interstitial",
         type = AdType.INTERSTITIAL,
-        networkAdUnitId = BuildConfig.inter_test,
+        networkAdUnitId = TEST_INTERSTITIAL_ID,
         providerName = AdMobProvider.PROVIDER_NAME
     )
 
-    val mainRewarded = AdUnit(
+    val defaultRewarded = AdUnit(
         id = "main_rewarded",
         type = AdType.REWARDED,
-        networkAdUnitId = BuildConfig.reward_test,
+        networkAdUnitId = TEST_REWARDED_ID,
         providerName = AdMobProvider.PROVIDER_NAME
     )
 
-    val mainRewardedInterstitial = AdUnit(
+    val defaultRewardedInterstitial = AdUnit(
         id = "main_rewarded_interstitial",
         type = AdType.REWARDED_INTERSTITIAL,
-        networkAdUnitId = BuildConfig.reward_inter_test,
+        networkAdUnitId = TEST_REWARDED_INTERSTITIAL_ID,
         providerName = AdMobProvider.PROVIDER_NAME
     )
 
-    val mainBanner = AdUnit(
+    val defaultBanner = AdUnit(
         id = "main_banner",
         type = AdType.BANNER,
-        networkAdUnitId = BuildConfig.banner_test,
+        networkAdUnitId = TEST_BANNER_ID,
         providerName = AdMobProvider.PROVIDER_NAME,
         collapsiblePositionType = CollapsiblePositionType.NONE
     )
 
-    val mainNative = AdUnit(
+    val defaultNative = AdUnit(
         id = "main_native",
         type = AdType.NATIVE,
-        networkAdUnitId = BuildConfig.native_test,
+        networkAdUnitId = TEST_NATIVE_ID,
         providerName = AdMobProvider.PROVIDER_NAME
     )
 
-    val appOpenResume = AdUnit(
+    val defaultAppOpenResume = AdUnit(
         id = "app_open_resume",
         type = AdType.APP_OPEN,
-        networkAdUnitId = BuildConfig.appopen_resume_test,
+        networkAdUnitId = TEST_APPOPEN_RESUME_ID,
         providerName = AdMobProvider.PROVIDER_NAME
     )
 }
