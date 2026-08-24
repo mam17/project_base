@@ -11,7 +11,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.example.myapplication.ads.AdOpenResumeUtils
+import com.example.myapplication.ads.AdAppOpenManager
 import com.example.myapplication.utils.AppEx.setupAppShortcuts
 import com.example.myapplication.utils.firebase.FirebaseConfigManager
 import com.example.myapplication.utils.firebase.FirebaseTrackingManager
@@ -71,7 +71,7 @@ class MyApplication : Application(), Application.ActivityLifecycleCallbacks,
         if (shouldShowAppOpenOnResume) {
             shouldShowAppOpenOnResume = false
             mainHandler.postDelayed({
-                currentActivity?.let { AdOpenResumeUtils.showAppOpenResume(it) }
+                currentActivity?.let { AdAppOpenManager.show(it) }
             }, 300L)
         }
     }

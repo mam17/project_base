@@ -3,10 +3,9 @@ package com.example.myapplication.ui.main
 import android.os.CountDownTimer
 import android.view.View
 import com.example.myapplication.R
-import com.example.myapplication.ads.AdBannerUtils
-import com.example.myapplication.ads.AdInterstitialUtils
-import com.example.myapplication.ads.AdNativeUtils
-import com.example.myapplication.ads.AdRewardUtils
+import com.example.myapplication.ads.AdNativeCountdown
+import com.example.myapplication.ads.AdPlacement
+import com.example.myapplication.ads.Ads
 import com.example.myapplication.ads.AdsPreloadCoordinator
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityMainBinding
@@ -114,78 +113,79 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun showInterstitial(action: () -> Unit = {}) {
-        AdInterstitialUtils.show(activity = this, action = action)
+        Ads.show(this, AdPlacement.INTER_FEATURE) {
+            action(action)
+        }
     }
 
     private fun showRewarded(action: () -> Unit = {}) {
-        AdRewardUtils.showRewarded(
-            activity = this,
-            onRewardEarned = { amount, type -> showToast("Reward earned: $amount $type") },
-            onDismissed = {
+        Ads.show(this, AdPlacement.REWARD) {
+            onRewardEarned { amount, type -> showToast("Reward earned: $amount $type") }
+            onDismissed {
                 showToast("Rewarded dismissed")
                 action.invoke()
-            },
-            onFailed = { message ->
+            }
+            onFailed { message ->
                 showToast("Rewarded failed: $message")
                 action.invoke()
             }
-        )
+        }
     }
 
     private fun loadAndShowInterstitial(action: () -> Unit = {}) {
-        AdInterstitialUtils.loadAndShow(
-            activity = this,
-            onDismissed = {
+        Ads.loadAndShow(this, AdPlacement.INTER_FEATURE) {
+            onDismissed {
                 showToast("LoadAndShow interstitial dismissed")
                 action.invoke()
-            },
-            onFailed = { message ->
+            }
+            onFailed { message ->
                 showToast("LoadAndShow interstitial failed: $message")
                 action.invoke()
             }
-        )
+        }
     }
 
     private fun loadAndShowRewarded(action: () -> Unit = {}) {
-        AdRewardUtils.loadAndShowRewarded(
-            activity = this,
-            onRewardEarned = { amount, type -> showToast("Reward earned: $amount $type") },
-            onDismissed = {
+        Ads.loadAndShow(this, AdPlacement.REWARD) {
+            onRewardEarned { amount, type -> showToast("Reward earned: $amount $type") }
+            onDismissed {
                 showToast("LoadAndShow rewarded dismissed")
                 action.invoke()
-            },
-            onFailed = { message ->
+            }
+            onFailed { message ->
                 showToast("LoadAndShow rewarded failed: $message")
                 action.invoke()
             }
-        )
+        }
     }
 
     private fun loadAndShowRewardedInterstitial(action: () -> Unit = {}) {
-        AdRewardUtils.loadAndShowRewardedInterstitial(
-            activity = this,
-            onRewardEarned = { amount, type ->
+        Ads.loadAndShow(this, AdPlacement.REWARD_INTER) {
+            onRewardEarned { amount, type ->
                 showToast("Rewarded interstitial earned: $amount $type")
-            },
-            onDismissed = {
+            }
+            onDismissed {
                 showToast("Rewarded interstitial dismissed")
                 action.invoke()
-            },
-            onFailed = { message ->
+            }
+            onFailed { message ->
                 showToast("Rewarded interstitial failed: $message")
                 action.invoke()
             }
-        )
+        }
     }
 
     private fun showBanner() {
         binding.frBannerAds.shimmerBanner.visibility = View.VISIBLE
         binding.frBannerAds.shimmerBanner.startShimmer()
         binding.frBannerAds.bannerContainer.post {
-            AdBannerUtils.showBanner(
-                activity = this,
+            Ads.showInto(
+                host = this,
                 container = binding.frBannerAds.bannerContainer,
-                collapsiblePositionType = CollapsiblePositionType.BOTTOM
+                placement = AdPlacement.banner(
+                    name = com.example.myapplication.ads.AdUnits.BANNER_COLLAP,
+                    collapsible = CollapsiblePositionType.BOTTOM
+                )
             ) { result ->
                 binding.frBannerAds.shimmerBanner.stopShimmer()
                 binding.frBannerAds.shimmerBanner.visibility = View.GONE
@@ -197,22 +197,26 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun showNative() {
-        AdNativeUtils.showNative(
-            activity = this,
-            nativeContainer = binding.frNative,
-            onFailure = { message -> showToast("Native failed: $message") }
-        )
+        Ads.showInto(
+            host = this,
+            container = binding.frNative,
+            placement = AdPlacement.NATIVE_FEATURE
+        ) { result ->
+            if (result is AdResult.Failure) {
+                showToast("Native failed: ${result.message}")
+            }
+        }
     }
 
     private fun showInterstitialThenNativeTimeout() {
-        AdInterstitialUtils.show(activity = this) {
-            showNativeTimeout()
+        Ads.show(this, AdPlacement.INTER_FEATURE) {
+            action { showNativeTimeout() }
         }
     }
 
     private fun showNativeTimeout() {
         nativeCloseTimer?.cancel()
-        nativeCloseTimer = AdNativeUtils.showNativeWithCountdown(
+        nativeCloseTimer = AdNativeCountdown.show(
             lifecycleOwner = this,
             rootView = binding.frNativeTimeOut.root,
             nativeContainer = binding.frNativeTimeOut.nativeFullContainer,

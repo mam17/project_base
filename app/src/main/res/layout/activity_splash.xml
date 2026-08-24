@@ -57,8 +57,19 @@
         android:paddingStart="@dimen/size10"
         android:paddingEnd="@dimen/size10"
         android:progress="50"
-        app:indicatorColor="@color/red"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:trackColor="@color/white"
+        app:indicatorColor="@color/col_main"
+        app:layout_constraintBottom_toTopOf="@+id/frBannerAds"
+        app:trackColor="@color/gray"
         app:trackCornerRadius="@dimen/size12" />
+
+    <include
+        android:id="@+id/frBannerAds"
+        layout="@layout/layout_banner_ads"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <include
+        android:id="@+id/frNativeTimeOut"
+        layout="@layout/fl_native_full_time_count" />
 </androidx.constraintlayout.widget.ConstraintLayout>

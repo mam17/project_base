@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -411,7 +412,9 @@ class AdMobProvider : AdProvider {
                     mediationInfo = cachedNative.responseInfo.toAdMediationInfo()
                 )
             }
-            val nativeAdView = findNativeAdView(container) ?: createNativeAdView(container.context)
+            val nativeAdView = findNativeAdView(container)
+                ?: inflateNativeAdView(container, adUnit.nativeLayoutRes)
+                ?: createNativeAdView(container.context)
             bindNativeAd(cachedNative, nativeAdView)
             if (nativeAdView.parent == null) {
                 container.removeAllViews()
@@ -452,7 +455,9 @@ class AdMobProvider : AdProvider {
                     )
                 }
 
-                val nativeAdView = findNativeAdView(container) ?: createNativeAdView(container.context)
+                val nativeAdView = findNativeAdView(container)
+                    ?: inflateNativeAdView(container, adUnit.nativeLayoutRes)
+                    ?: createNativeAdView(container.context)
                 bindNativeAd(nativeAd, nativeAdView)
 
                 if (nativeAdView.parent == null) {
@@ -489,6 +494,14 @@ class AdMobProvider : AdProvider {
             .build()
 
         adLoader.loadAd(AdRequest.Builder().build())
+    }
+
+    private fun inflateNativeAdView(container: ViewGroup, layoutRes: Int): NativeAdView? {
+        if (layoutRes == 0) return null
+        return runCatching {
+            val inflated = LayoutInflater.from(container.context).inflate(layoutRes, container, false)
+            findNativeAdView(inflated)
+        }.getOrNull()
     }
 
     private fun findNativeAdView(view: View): NativeAdView? {
@@ -688,7 +701,9 @@ class AdMobProvider : AdProvider {
             bannerAds.clear()
             appOpenAds.clear()
             nativeAds.clear()
-            loadGenerations.replaceAll { _, generation -> generation + 1L }
+            for (key in loadGenerations.keys) {
+                loadGenerations[key] = (loadGenerations[key] ?: 0L) + 1L
+            }
         }
         banners.forEach(AdView::destroy)
         natives.forEach(NativeAd::destroy)

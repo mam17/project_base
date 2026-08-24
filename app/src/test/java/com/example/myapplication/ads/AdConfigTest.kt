@@ -57,23 +57,25 @@ class AdConfigTest {
     }
 
     @Test
-    fun `debug build uses AdUnits test IDs for ad units`() {
+    fun `debug build uses test IDs for ad units`() {
         if (BuildConfig.DEBUG) {
+            val testId = RemoteAdConfig.getTestAdUnitId(AdType.INTERSTITIAL)
+
             val interUnit = RemoteAdConfig.getAdUnit("test_placement", AdType.INTERSTITIAL, is2Floor = false)
             assertNotNull(interUnit)
             assertEquals("test_placement", interUnit?.id)
-            assertEquals(AdUnits.TEST_INTERSTITIAL_ID, interUnit?.networkAdUnitId)
+            assertEquals(testId, interUnit?.networkAdUnitId)
 
             val inter2fUnit = RemoteAdConfig.getAdUnit("test_placement", AdType.INTERSTITIAL, is2Floor = true)
             assertNotNull(inter2fUnit)
             assertEquals("test_placement_2f", inter2fUnit?.id)
-            assertEquals(AdUnits.TEST_INTERSTITIAL_ID, inter2fUnit?.networkAdUnitId)
+            assertEquals(testId, inter2fUnit?.networkAdUnitId)
 
             val twoFloorUnits = RemoteAdConfig.getTwoFloorAdUnits("test_placement", AdType.INTERSTITIAL)
             assertTrue(twoFloorUnits.has2Floor)
             assertTrue(twoFloorUnits.isAvailable)
-            assertEquals(AdUnits.TEST_INTERSTITIAL_ID, twoFloorUnits.unit2f?.networkAdUnitId)
-            assertEquals(AdUnits.TEST_INTERSTITIAL_ID, twoFloorUnits.unitBase?.networkAdUnitId)
+            assertEquals(testId, twoFloorUnits.unit2f?.networkAdUnitId)
+            assertEquals(testId, twoFloorUnits.unitBase?.networkAdUnitId)
         }
     }
 
@@ -117,13 +119,22 @@ class AdConfigTest {
         val unit = AdUnits.getUnit(AdUnits.NATIVE_FEATURE_FIRST, AdType.NATIVE)
         assertNotNull(unit)
         assertEquals(AdUnits.NATIVE_FEATURE_FIRST, unit?.id)
+    }
 
-        assertNotNull(AdUnits.mainInterstitial)
-        assertNotNull(AdUnits.mainRewarded)
-        assertNotNull(AdUnits.mainRewardedInterstitial)
-        assertNotNull(AdUnits.mainBanner)
-        assertNotNull(AdUnits.mainNative)
-        assertNotNull(AdUnits.appOpenResume)
+    @Test
+    fun `AdPlacement factory methods create correct placements`() {
+        val inter = AdPlacement.interstitial(AdUnits.INTER_FEATURE_FIRST)
+        assertEquals(AdUnits.INTER_FEATURE_FIRST, inter.name)
+        assertEquals(AdType.INTERSTITIAL, inter.type)
+        assertTrue(inter.useTwoFloor)
+        assertTrue(inter.showLoadingWhenNotReady)
+
+        val reward = AdPlacement.rewarded(AdUnits.REWARD_FEATURE)
+        assertEquals(AdType.REWARDED, reward.type)
+
+        val native = AdPlacement.NATIVE_FEATURE
+        assertEquals(AdType.NATIVE, native.type)
+        assertEquals(AdUnits.NATIVE_FEATURE_FIRST, native.name)
     }
 
     @Test
@@ -148,5 +159,57 @@ class AdConfigTest {
                 assertNotNull(twoFloor.unitBase)
             }
         }
+    }
+
+    @Test
+    fun `NativeType correctly pairs layout and loading resources`() {
+        for (nativeType in NativeType.entries) {
+            assertTrue("Layout res must be valid for $nativeType", nativeType.layoutRes != 0)
+            assertTrue("Loading res must be valid for $nativeType", nativeType.loadingLayoutRes != 0)
+        }
+
+        assertEquals(NativeType.TYPE_1, NativeType.fromKey("type_1"))
+        assertEquals(NativeType.TYPE_2, NativeType.fromKey("type_2"))
+        assertEquals(NativeType.TYPE_3, NativeType.fromKey("type_3"))
+        assertEquals(NativeType.TYPE_4, NativeType.fromKey("type_4"))
+        assertEquals(NativeType.FULL_SCREEN, NativeType.fromKey("full_screen"))
+        assertEquals(NativeType.DEFAULT, NativeType.fromKey("unknown"))
+    }
+
+    @Test
+    fun `AdPlacement native factory assigns matching native and loading layouts`() {
+        val nativeType2 = AdPlacement.native(AdUnits.NATIVE_OB_FIRST_1, NativeType.TYPE_2)
+        assertEquals(NativeType.TYPE_2, nativeType2.nativeType)
+        assertEquals(NativeType.TYPE_2.layoutRes, nativeType2.nativeLayoutRes)
+        assertEquals(NativeType.TYPE_2.loadingLayoutRes, nativeType2.loadingLayoutRes)
+
+        val nativeType3 = AdPlacement.native(AdUnits.NATIVE_LANGUAGE_FIRST_1, NativeType.TYPE_3)
+        assertEquals(NativeType.TYPE_3, nativeType3.nativeType)
+        assertEquals(NativeType.TYPE_3.layoutRes, nativeType3.nativeLayoutRes)
+        assertEquals(NativeType.TYPE_3.loadingLayoutRes, nativeType3.loadingLayoutRes)
+
+        val nativeType4 = AdPlacement.native(AdUnits.NATIVE_LANGUAGE_FIRST_2, NativeType.TYPE_4)
+        assertEquals(NativeType.TYPE_4, nativeType4.nativeType)
+        assertEquals(NativeType.TYPE_4.layoutRes, nativeType4.nativeLayoutRes)
+        assertEquals(NativeType.TYPE_4.loadingLayoutRes, nativeType4.loadingLayoutRes)
+    }
+
+    @Test
+    fun `Onboarding native placements match required NativeTypes`() {
+        val obFirst1 = AdPlacement.native(AdUnits.NATIVE_OB_FIRST_1, NativeType.TYPE_1)
+        assertEquals(NativeType.TYPE_1, obFirst1.nativeType)
+        assertEquals(NativeType.TYPE_1.layoutRes, obFirst1.nativeLayoutRes)
+
+        val obSecond1 = AdPlacement.native(AdUnits.NATIVE_OB_SECOND_1, NativeType.TYPE_1)
+        assertEquals(NativeType.TYPE_1, obSecond1.nativeType)
+        assertEquals(NativeType.TYPE_1.layoutRes, obSecond1.nativeLayoutRes)
+
+        val fsFirst1 = AdPlacement.native(AdUnits.NATIVE_FS_FIRST_1, NativeType.FULL_SCREEN)
+        assertEquals(NativeType.FULL_SCREEN, fsFirst1.nativeType)
+        assertEquals(NativeType.FULL_SCREEN.layoutRes, fsFirst1.nativeLayoutRes)
+
+        val fsFirst2 = AdPlacement.native(AdUnits.NATIVE_FS_FIRST_2, NativeType.FULL_SCREEN)
+        assertEquals(NativeType.FULL_SCREEN, fsFirst2.nativeType)
+        assertEquals(NativeType.FULL_SCREEN.layoutRes, fsFirst2.nativeLayoutRes)
     }
 }

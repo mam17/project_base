@@ -58,5 +58,7 @@
             tools:ignore="SpUsage" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-
+    <include
+        android:id="@+id/frNativeTimeOut"
+        layout="@layout/fl_native_full_time_count" />
 </androidx.constraintlayout.widget.ConstraintLayout>

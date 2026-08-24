@@ -2,38 +2,18 @@
 <com.google.android.gms.ads.nativead.NativeAdView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/nativeAdView"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/white"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_ads_native"
     android:padding="@dimen/size12">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/tvAdBadge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_ads_r6"
-            android:paddingHorizontal="@dimen/size6"
-            android:paddingVertical="@dimen/size2"
-            android:text="Ad"
-            android:textColor="@color/white"
-            android:textSize="@dimen/size10"
-            android:textStyle="bold" />
-
-        <com.google.android.gms.ads.nativead.MediaView
-            android:id="@+id/mediaView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:layout_marginTop="@dimen/size8" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/size8"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -50,13 +30,35 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvHeadline"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/black"
-                    android:textSize="@dimen/size16"
-                    android:textStyle="bold" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvAdBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_ads_r6"
+                        android:gravity="center"
+                        android:paddingHorizontal="@dimen/size6"
+                        android:paddingVertical="@dimen/size2"
+                        android:text="AD"
+                        android:textColor="@color/white"
+                        android:textSize="@dimen/size10"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:id="@+id/tvHeadline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/size4"
+                        android:textColor="@color/black"
+                        android:textSize="@dimen/size16"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvBody"
@@ -64,19 +66,27 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/size4"
                     android:maxLines="2"
+                    android:ellipsize="end"
                     android:textColor="@color/black"
                     android:textSize="@dimen/size12" />
             </LinearLayout>
         </LinearLayout>
 
+        <com.google.android.gms.ads.nativead.MediaView
+            android:id="@+id/mediaView"
+            android:layout_marginTop="@dimen/size10"
+            android:layout_width="match_parent"
+            android:layout_height="180dp" />
+
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnCallToAction"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/size50"
+            android:layout_width="120dp"
+            android:layout_gravity="end"
+            android:layout_height="@dimen/size48"
             android:layout_marginTop="@dimen/size8"
             android:background="@drawable/bg_cta_ads"
             android:stateListAnimator="@null"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/white"
             android:textStyle="bold" />
     </LinearLayout>
 </com.google.android.gms.ads.nativead.NativeAdView>

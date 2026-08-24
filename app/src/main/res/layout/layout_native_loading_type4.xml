@@ -1,46 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.facebook.shimmer.ShimmerFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/white">
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_ads_native">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="@dimen/size12">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <View
             android:id="@+id/tvAdBadge"
             android:layout_width="@dimen/size24"
             android:layout_height="@dimen/size16"
-            android:background="@drawable/bg_ads_r6" />
-
-        <View
-            android:id="@+id/mediaView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="@dimen/size8"
-            android:layout_weight="1"
-            android:background="@drawable/bg_ads_shimmer_item" />
+            android:background="@drawable/bg_ads_r8" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/size8"
-            android:gravity="center_vertical"
+            android:layout_margin="10dp"
             android:orientation="horizontal">
-
-            <View
-                android:id="@+id/ivIcon"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_ads_shimmer_item" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/size8"
+                android:layout_marginEnd="@dimen/size8"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
@@ -58,19 +42,25 @@
                     android:background="@drawable/bg_ads_shimmer_item" />
 
                 <View
-                    android:layout_width="120dp"
+                    android:layout_width="100dp"
                     android:layout_height="@dimen/size12"
                     android:layout_marginTop="@dimen/size4"
                     android:background="@drawable/bg_ads_shimmer_item" />
+
+                <View
+                    android:id="@+id/btnCallToAction"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_ads_shimmer_item" />
             </LinearLayout>
+
+            <View
+                android:id="@+id/mediaView"
+                android:layout_width="0dp"
+                android:layout_height="120dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_ads_shimmer_item" />
         </LinearLayout>
-
-        <View
-            android:id="@+id/btnCallToAction"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/size50"
-            android:layout_marginTop="@dimen/size8"
-            android:background="@drawable/bg_ads_shimmer_item" />
     </LinearLayout>
-
 </com.facebook.shimmer.ShimmerFrameLayout>

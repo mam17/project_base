@@ -366,12 +366,7 @@ internal class AdManagerImpl(application: Application) : AdManager {
 
     private fun prepareAdUnit(provider: AdProvider, adUnit: AdUnit) {
         val placement = PlacementKey.from(adUnit)
-        var previous: AdUnit? = null
-        knownAdUnits.compute(placement) { _, current ->
-            previous = current
-            adUnit
-        }
-        val oldUnit = previous ?: return
+        val oldUnit = knownAdUnits.put(placement, adUnit) ?: return
         if (AdKey.from(oldUnit) == AdKey.from(adUnit)) return
 
         cache.cancel(

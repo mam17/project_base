@@ -2,10 +2,8 @@ package com.example.myapplication.ads
 
 import android.os.Handler
 import android.os.Looper
-import com.example.myapplication.utils.firebase.FirebaseConfigManager
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Warms full-screen placements in priority order without flooding mediation at startup. */
 object AdsPreloadCoordinator {
     private const val REWARDED_DELAY_MS = 400L
     private const val REWARDED_INTERSTITIAL_DELAY_MS = 800L
@@ -18,16 +16,16 @@ object AdsPreloadCoordinator {
         if (!RemoteAdConfig.isEnableAllAds) return
         if (!started.compareAndSet(false, true)) return
 
-        AdInterstitialUtils.preload()
-        AdNativeUtils.preload()
-        mainHandler.postDelayed({ AdRewardUtils.preloadRewarded() }, REWARDED_DELAY_MS)
-        mainHandler.postDelayed(
-            { AdRewardUtils.preloadRewardedInterstitial() },
-            REWARDED_INTERSTITIAL_DELAY_MS
-        )
-        mainHandler.postDelayed(
-            { AdOpenResumeUtils.preloadAppOpenResume() },
-            APP_OPEN_DELAY_MS
-        )
+        Ads.preload(AdPlacement.INTER_FEATURE)
+        Ads.preload(AdPlacement.NATIVE_FEATURE)
+        mainHandler.postDelayed({
+            Ads.preload(AdPlacement.REWARD)
+        }, REWARDED_DELAY_MS)
+        mainHandler.postDelayed({
+            Ads.preload(AdPlacement.REWARD_INTER)
+        }, REWARDED_INTERSTITIAL_DELAY_MS)
+        mainHandler.postDelayed({
+            AdAppOpenManager.preload()
+        }, APP_OPEN_DELAY_MS)
     }
 }

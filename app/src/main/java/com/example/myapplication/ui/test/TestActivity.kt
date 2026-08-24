@@ -1,12 +1,12 @@
 package com.example.myapplication.ui.test
 
 import android.util.Log
-import com.example.myapplication.ads.AdInterstitialUtils
-import com.example.myapplication.ads.AdNativeUtils
-import com.example.myapplication.ads.AdRewardUtils
+import com.example.myapplication.ads.AdPlacement
+import com.example.myapplication.ads.Ads
 import com.example.myapplication.ads.AdUnits
 import com.example.myapplication.base.activity.BaseActivity
 import com.example.myapplication.databinding.ActivityTestBinding
+import com.libads.core.callback.AdResult
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -15,55 +15,56 @@ class TestActivity : BaseActivity<ActivityTestBinding>(ActivityTestBinding::infl
     override fun initView() {
         binding.tvPreload2f.setOnClickListener {
             updateStatus("Preloading 2-Floor Interstitial and Rewarded...")
-            AdInterstitialUtils.preloadTwoFloor(TEST_INTER_PLACEMENT)
-            AdRewardUtils.preloadRewardedTwoFloor(TEST_REWARD_PLACEMENT)
+            Ads.preload(
+                AdPlacement.interstitial(TEST_INTER_PLACEMENT),
+                AdPlacement.rewarded(TEST_REWARD_PLACEMENT)
+            )
             showToast("Started preloading 2-Floor Ads")
         }
 
         binding.tvShowInterWith2f.setOnClickListener {
             updateStatus("Requesting 2-Floor Interstitial ($TEST_INTER_PLACEMENT)...")
-            AdInterstitialUtils.showTwoFloor(
-                activity = this,
-                placementName = TEST_INTER_PLACEMENT,
-                showLoadingWhenNotReady = true
-            ) {
-                updateStatus("2-Floor Interstitial closed or failed -> Next action executed!")
-                showToast("Interstitial 2F: Next Action Executed")
+            Ads.show(this, AdPlacement.interstitial(TEST_INTER_PLACEMENT)) {
+                action {
+                    updateStatus("2-Floor Interstitial closed or failed -> Next action executed!")
+                    showToast("Interstitial 2F: Next Action Executed")
+                }
             }
         }
 
         binding.tvShowRewardWith2f.setOnClickListener {
             updateStatus("Requesting 2-Floor Rewarded ($TEST_REWARD_PLACEMENT)...")
-            AdRewardUtils.showRewardedTwoFloor(
-                activity = this,
-                placementName = TEST_REWARD_PLACEMENT,
-                showLoadingWhenNotReady = true,
-                onRewardEarned = { amount, type ->
+            Ads.show(this, AdPlacement.rewarded(TEST_REWARD_PLACEMENT)) {
+                onRewardEarned { amount, type ->
                     updateStatus("Reward earned: $amount $type")
                     showToast("Reward earned: $amount $type")
-                },
-                onDismissed = {
+                }
+                onDismissed {
                     updateStatus("2-Floor Rewarded dismissed")
                     showToast("Rewarded 2F Dismissed")
-                },
-                onFailed = { message ->
+                }
+                onFailed { message ->
                     updateStatus("2-Floor Rewarded failed: $message")
                     showToast("Rewarded 2F Failed: $message")
                 }
-            )
+            }
         }
 
         binding.tvShowNativeWith2f.setOnClickListener {
             updateStatus("Loading 2-Floor Native into container ($TEST_NATIVE_PLACEMENT)...")
-            AdNativeUtils.showNativeTwoFloor(
-                activity = this,
-                nativeContainer = binding.frNative,
-                placementName = TEST_NATIVE_PLACEMENT,
-                onFailure = { message ->
-                    updateStatus("2-Floor Native failed: $message")
-                    showToast("Native 2F Failed: $message")
+            Ads.showInto(
+                host = this,
+                container = binding.frNative,
+                placement = AdPlacement.native(TEST_NATIVE_PLACEMENT)
+            ) { result ->
+                if (result is AdResult.Failure) {
+                    updateStatus("2-Floor Native failed: ${result.message}")
+                    showToast("Native 2F Failed: ${result.message}")
+                } else if (result is AdResult.TimedOut) {
+                    updateStatus("2-Floor Native timed out")
+                    showToast("Native 2F Timed Out")
                 }
-            )
+            }
         }
     }
 

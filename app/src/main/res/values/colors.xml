@@ -11,5 +11,6 @@
     <color name="col_purple">#A819EB</color>
     <color name="col_yellow">#FFBD00</color>
     <color name="col_orange">#FF6F3F</color>
+    <color name="col_cta">#FF3D00</color>
 
 </resources>

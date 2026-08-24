@@ -17,5 +17,6 @@ data class AdUnit(
     val providerName: String,
     val cacheEnabled: Boolean = true,
     val timeoutMillis: Long = 10_000L,
-    val collapsiblePositionType: CollapsiblePositionType = CollapsiblePositionType.NONE
+    val collapsiblePositionType: CollapsiblePositionType = CollapsiblePositionType.NONE,
+    val nativeLayoutRes: Int = 0
 )

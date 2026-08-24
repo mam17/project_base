@@ -92,14 +92,22 @@ object RemoteAdConfig {
         return if (config.enabled) config else null
     }
 
+    // --- Test Ad Unit IDs (AdMob standard test IDs) ---
+    private const val TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
+    private const val TEST_NATIVE_ID = "ca-app-pub-3940256099942544/2247696110"
+    private const val TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
+    private const val TEST_REWARDED_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/5354046379"
+    private const val TEST_APPOPEN_RESUME_ID = "ca-app-pub-3940256099942544/9257395921"
+    private const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/2014213617"
+
     fun getTestAdUnitId(type: AdType): String {
         return when (type) {
-            AdType.INTERSTITIAL -> AdUnits.TEST_INTERSTITIAL_ID
-            AdType.NATIVE -> AdUnits.TEST_NATIVE_ID
-            AdType.REWARDED -> AdUnits.TEST_REWARDED_ID
-            AdType.REWARDED_INTERSTITIAL -> AdUnits.TEST_REWARDED_INTERSTITIAL_ID
-            AdType.APP_OPEN -> AdUnits.TEST_APPOPEN_RESUME_ID
-            AdType.BANNER -> AdUnits.TEST_BANNER_ID
+            AdType.INTERSTITIAL -> TEST_INTERSTITIAL_ID
+            AdType.NATIVE -> TEST_NATIVE_ID
+            AdType.REWARDED -> TEST_REWARDED_ID
+            AdType.REWARDED_INTERSTITIAL -> TEST_REWARDED_INTERSTITIAL_ID
+            AdType.APP_OPEN -> TEST_APPOPEN_RESUME_ID
+            AdType.BANNER -> TEST_BANNER_ID
         }
     }
 

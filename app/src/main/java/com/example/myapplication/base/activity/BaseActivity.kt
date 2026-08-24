@@ -36,6 +36,7 @@ abstract class BaseActivity<VB : ViewBinding>(
     lateinit var spManager: SpManager
 
     private var dialogLoading: DialogLoading? = null
+    var isCheckOpenApp = false
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(SystemUtil.setLocale(newBase))
@@ -44,6 +45,7 @@ abstract class BaseActivity<VB : ViewBinding>(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        isCheckOpenApp = spManager.isCompletedOnboarding
         _binding = bindingInflater(layoutInflater)
         setContentView(binding.root)
 

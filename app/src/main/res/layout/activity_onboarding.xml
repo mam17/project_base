@@ -62,5 +62,9 @@
                 tools:ignore="RelativeOverlap,SpUsage" />
         </RelativeLayout>
 
+        <FrameLayout
+            android:id="@+id/frNativeOnb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

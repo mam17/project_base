@@ -1,33 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.facebook.shimmer.ShimmerFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/white">
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_ads_native"
+    android:padding="@dimen/size12">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="@dimen/size12">
-
-        <View
-            android:id="@+id/tvAdBadge"
-            android:layout_width="@dimen/size24"
-            android:layout_height="@dimen/size16"
-            android:background="@drawable/bg_ads_r6" />
-
-        <View
-            android:id="@+id/mediaView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="@dimen/size8"
-            android:layout_weight="1"
-            android:background="@drawable/bg_ads_shimmer_item" />
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/size8"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -44,11 +29,25 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <View
-                    android:id="@+id/tvHeadline"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/size16"
-                    android:background="@drawable/bg_ads_shimmer_item" />
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:id="@+id/tvAdBadge"
+                        android:layout_width="@dimen/size24"
+                        android:layout_height="@dimen/size16"
+                        android:background="@drawable/bg_ads_shimmer_item" />
+
+                    <View
+                        android:id="@+id/tvHeadline"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/size16"
+                        android:layout_marginStart="@dimen/size6"
+                        android:background="@drawable/bg_ads_shimmer_item" />
+                </LinearLayout>
 
                 <View
                     android:id="@+id/tvBody"
@@ -58,7 +57,7 @@
                     android:background="@drawable/bg_ads_shimmer_item" />
 
                 <View
-                    android:layout_width="120dp"
+                    android:layout_width="140dp"
                     android:layout_height="@dimen/size12"
                     android:layout_marginTop="@dimen/size4"
                     android:background="@drawable/bg_ads_shimmer_item" />
@@ -66,11 +65,18 @@
         </LinearLayout>
 
         <View
-            android:id="@+id/btnCallToAction"
+            android:id="@+id/mediaView"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/size50"
+            android:layout_height="180dp"
+            android:layout_marginTop="@dimen/size10"
+            android:background="@drawable/bg_ads_shimmer_item" />
+
+        <View
+            android:id="@+id/btnCallToAction"
+            android:layout_width="120dp"
+            android:layout_height="@dimen/size48"
+            android:layout_gravity="end"
             android:layout_marginTop="@dimen/size8"
             android:background="@drawable/bg_ads_shimmer_item" />
     </LinearLayout>
-
 </com.facebook.shimmer.ShimmerFrameLayout>
